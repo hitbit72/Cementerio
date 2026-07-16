@@ -75,7 +75,7 @@
   <div class="main">
     <header class="topbar">
       <div>
-        <div class="breadcrumb">Cementerio Municipal</div>
+        <div class="breadcrumb">Cementerio Municipal de Jimena</div>
         <h2 x-text="sectionTitle"></h2>
       </div>
       <button class="menu-toggle" @click="sidebarOpen = !sidebarOpen" aria-label="Abrir menú">
@@ -292,8 +292,10 @@
                       <div class="field"><label>Fecha nacimiento</label><input type="date" x-model="form.fnacido"></div>
                       <div class="field"><label>Fecha fallecimiento</label><input type="date" x-model="form.ffallecido"></div>
 
+                      <div class="field"><label>Edad</label><input type="text" x-model="form.edad"></div>
+
                       <div class="field span-2"><label>Causa</label><input type="text" x-model="form.causa"></div>
-                      <div class="field span-2"><label>Dirección</label><input type="text" x-model="form.direccion"></div>
+                      <div class="field"><label>Dirección</label><input type="text" x-model="form.direccion"></div>
 
                       <div class="field">
                         <label>Población</label>
@@ -314,8 +316,7 @@
                           </template>
                         </select>
                       </div>
-
-                      <div class="field span-2" x-show="formSectorId">
+                      <div class="field" x-show="formSectorId">
                         <label>Nicho</label>
                         <select x-model="form.nicho_id">
                           <option value="">— Elegir nicho —</option>

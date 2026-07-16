@@ -135,7 +135,7 @@ function difuntosSection() {
       this.drawerMode = 'create';
       this.current = null;
       this.form = {
-        num_registro: '', nombre: '', apellidos: '', fnacido: '', ffallecido: '',
+        num_registro: '', nombre: '', apellidos: '', fnacido: '', ffallecido: '', edad: '',
         causa: '', direccion: '', poblacion_id: '', nicho_id: '', observaciones: '',
       };
       this.formSectorId = '';
@@ -175,6 +175,7 @@ function difuntosSection() {
         apellidos: d.apellidos || '',
         fnacido: d.fnacido || '',
         ffallecido: d.ffallecido || '',
+        edad: d.edad || '',
         causa: d.causa || '',
         direccion: d.direccion || '',
         poblacion_id: d.poblacion_id || '',
