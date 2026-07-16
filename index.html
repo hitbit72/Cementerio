@@ -10,6 +10,7 @@
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/app.js"></script>
+<script src="js/difuntos.js"></script>
 </head>
 <body>
 
@@ -103,7 +104,7 @@
               <div class="value" :class="{ loading: statsLoading }" x-text="statsLoading ? '···' : stats.nichosVacios"></div>
             </div>
             <div class="stat-card">
-              <div class="label">Propietarios</div>
+              <div class="label">Familiares</div>
               <div class="value" :class="{ loading: statsLoading }" x-text="statsLoading ? '···' : stats.propietarios"></div>
             </div>
             <div class="stat-card">
@@ -122,8 +123,247 @@
         </div>
       </template>
 
+      <!-- ---------- Difuntos ---------- -->
+      <template x-if="activeSection === 'difuntos'">
+        <div x-data="difuntosSection()" x-init="init()">
+
+          <div class="toolbar">
+            <input class="search-input" type="text" placeholder="Buscar por nombre, apellidos o nº de registro…"
+                   x-model="search" @input="onSearchInput()">
+
+            <select class="select-input" x-model="sectorFiltro" @change="onSectorFilterChange()">
+              <option value="">Todos los sectores</option>
+              <template x-for="s in sectores" :key="s.id">
+                <option :value="s.id" x-text="s.nombre"></option>
+              </template>
+            </select>
+
+            <button class="btn btn-primary" x-show="canWrite" @click="openCreate()">+ Nuevo difunto</button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Apellidos</th>
+                <th>Fallecimiento</th>
+                <th>Edad</th>
+                <th>Nicho</th>
+                <th>Población</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-if="loading">
+                <tr><td colspan="6" class="table-empty">Cargando…</td></tr>
+              </template>
+              <template x-if="!loading && rows.length === 0">
+                <tr><td colspan="6" class="table-empty">No se han encontrado difuntos con esos filtros.</td></tr>
+              </template>
+              <template x-if="!loading">
+                <template x-for="row in rows" :key="row.id">
+                  <tr @click="openDetail(row)">
+                    <td x-text="row.nombre"></td>
+                    <td x-text="row.apellidos || '—'"></td>
+                    <td x-text="fmtDate(row.ffallecido)"></td>
+                    <td x-text="row.edad ?? '—'"></td>
+                    <td x-text="ubicacion(row)"></td>
+                    <td x-text="row.poblacion?.nombre || '—'"></td>
+                  </tr>
+                </template>
+              </template>
+            </tbody>
+          </table>
+
+          <div class="pagination" x-show="!loading && totalCount > 0">
+            <span>
+              Página <span x-text="page + 1"></span> de <span x-text="totalPages"></span>
+              (<span x-text="totalCount"></span> registros)
+            </span>
+            <div class="controls">
+              <button class="btn btn-ghost btn-sm" @click="prevPage()" :disabled="page === 0">Anterior</button>
+              <button class="btn btn-ghost btn-sm" @click="nextPage()" :disabled="page + 1 >= totalPages">Siguiente</button>
+            </div>
+          </div>
+
+          <!-- ===================== DRAWER DE DETALLE / EDICIÓN ===================== -->
+          <template x-if="drawerOpen">
+            <div>
+              <div class="drawer-backdrop" @click="closeDrawer()"></div>
+              <div class="drawer">
+
+                <div class="drawer-header">
+                  <div>
+                    <template x-if="drawerMode === 'create'"><h3>Nuevo difunto</h3></template>
+                    <template x-if="drawerMode !== 'create'">
+                      <h3 x-text="current ? (current.nombre + ' ' + (current.apellidos || '')) : 'Cargando…'"></h3>
+                    </template>
+                    <template x-if="drawerMode === 'edit'"><div class="muted" x-text="'Editando ficha: ' + ubicacion(current)"></div></template>
+                  </div>
+                  <button class="drawer-close" @click="closeDrawer()" aria-label="Cerrar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+
+                <div class="drawer-body">
+
+                  <template x-if="formError">
+                    <div class="error-banner" x-text="formError"></div>
+                  </template>
+
+                  <!-- ---------- MODO VISTA ---------- -->
+                  <template x-if="drawerMode === 'view' && current">
+                    <div>
+                      <div class="def-list">
+                        <div class="def-item"><div class="dt">Nº Registro</div><div class="dd" x-text="current.num_registro || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Edad</div><div class="dd" x-text="current.edad ?? '—'"></div></div>
+                        <div class="def-item"><div class="dt">Fecha nacimiento</div><div class="dd" x-text="fmtDate(current.fnacido)"></div></div>
+                        <div class="def-item"><div class="dt">Fecha fallecimiento</div><div class="dd" x-text="fmtDate(current.ffallecido)"></div></div>
+                        <div class="def-item"><div class="dt">Causa</div><div class="dd" x-text="current.causa || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Nicho</div><div class="dd" x-text="ubicacion(current)"></div></div>
+                        <div class="def-item"><div class="dt">Población</div><div class="dd" x-text="current.poblacion?.nombre || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Dirección</div><div class="dd" x-text="current.direccion || '—'"></div></div>
+                      </div>
+                      <div class="def-list full">
+                        <div class="def-item"><div class="dt">Observaciones</div><div class="dd" x-text="current.observaciones || '—'"></div></div>
+                        <div class="def-item">
+                          <div class="dt">Última modificación</div>
+                          <div class="dd muted" x-text="(current.musuario_profile?.nombre || current.musuario_profile?.email || 'Desconocido') + (current.fmodificado ? ' · ' + new Date(current.fmodificado).toLocaleString('es-ES') : '')"></div>
+                        </div>
+                      </div>
+
+                      <hr class="section-divider">
+
+                      <!-- ---------- Familiares ---------- -->
+                      <h4 class="subsection-title">Familiares</h4>
+
+                      <template x-if="familiaresLoading">
+                        <p class="muted">Cargando familiares…</p>
+                      </template>
+
+                      <template x-if="!familiaresLoading && familiares.length === 0">
+                        <p class="muted">No hay familiares registrados todavía.</p>
+                      </template>
+
+                      <template x-for="rel in familiares" :key="rel.id">
+                        <div class="familiar-row">
+                          <div>
+                            <div class="familiar-name" x-text="(rel.propietario?.nombre || '') + ' ' + (rel.propietario?.apellidos || '')"></div>
+                            <div class="familiar-meta" x-text="(rel.propietario?.telefono || 'Sin teléfono') + (rel.propietario?.dni ? ' · ' + rel.propietario.dni : '')"></div>
+                          </div>
+                          <div style="display:flex; align-items:center; gap:0.6em;">
+                            <span class="tag" x-show="rel.relacion" x-text="rel.relacion"></span>
+                            <button class="btn btn-ghost btn-sm" x-show="canWrite" @click="removeFamiliar(rel)">Quitar</button>
+                          </div>
+                        </div>
+                      </template>
+
+                      <template x-if="canWrite">
+                        <div class="add-familiar-box">
+                          <div class="field" style="position:relative; margin-bottom:0.6em;">
+                            <label>Añadir familiar existente</label>
+                            <input type="text" placeholder="Busca por nombre, apellidos o DNI…"
+                                   x-model="famSearch" @input="onFamSearchInput()">
+                            <div class="autocomplete-results" x-show="famResults.length > 0">
+                              <template x-for="p in famResults" :key="p.id">
+                                <button type="button" @click="pickFamiliar(p)" x-text="p.nombre + ' ' + (p.apellidos || '') + (p.dni ? ' · ' + p.dni : '')"></button>
+                              </template>
+                            </div>
+                          </div>
+                          <div class="field" style="margin-bottom:0.6em;">
+                            <label>Relación (ej. Hijo/a, Nieto/a)</label>
+                            <input type="text" x-model="famRelacion">
+                          </div>
+                          <button class="btn btn-primary btn-sm" :disabled="!famSelected || famSaving" @click="addFamiliar()">
+                            <span x-show="!famSaving">Añadir</span>
+                            <span x-show="famSaving">Añadiendo…</span>
+                          </button>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+
+                  <!-- ---------- MODO CREAR / EDITAR ---------- -->
+                  <template x-if="drawerMode === 'create' || drawerMode === 'edit'">
+                    <div class="form-grid">
+                      <div class="field"><label>Nº Registro</label><input type="text" x-model="form.num_registro"></div>
+                      <div class="field"><label>Nombre *</label><input type="text" x-model="form.nombre" required></div>
+                      <div class="field span-2"><label>Apellidos</label><input type="text" x-model="form.apellidos"></div>
+
+                      <div class="field"><label>Fecha nacimiento</label><input type="date" x-model="form.fnacido"></div>
+                      <div class="field"><label>Fecha fallecimiento</label><input type="date" x-model="form.ffallecido"></div>
+
+                      <div class="field span-2"><label>Causa</label><input type="text" x-model="form.causa"></div>
+                      <div class="field span-2"><label>Dirección</label><input type="text" x-model="form.direccion"></div>
+
+                      <div class="field">
+                        <label>Población</label>
+                        <select x-model="form.poblacion_id">
+                          <option value="">— Sin especificar —</option>
+                          <template x-for="p in poblaciones" :key="p.id">
+                            <option :value="p.id" :selected="p.id === form.poblacion_id" x-text="p.nombre"></option>
+                          </template>
+                        </select>
+                      </div>
+
+                      <div class="field">
+                        <label>Sector</label>
+                        <select x-model="formSectorId" @change="onSectorChangeInForm()">
+                          <option value="">— Sin asignar —</option>
+                          <template x-for="s in sectores" :key="s.id">
+                            <option :value="s.id" :selected="s.id === formSectorId" x-text="s.nombre"></option>
+                          </template>
+                        </select>
+                      </div>
+
+                      <div class="field span-2" x-show="formSectorId">
+                        <label>Nicho</label>
+                        <select x-model="form.nicho_id">
+                          <option value="">— Elegir nicho —</option>
+                          <template x-for="n in nichoOptions" :key="n.id">
+                            <option :value="n.id" :selected="n.id === form.nicho_id" x-text="'Nº ' + n.numero_nicho + (n.estado ? ' · ' + n.estado : '')"></option>
+                          </template>
+                        </select>
+                      </div>
+
+                      <div class="field span-2"><label>Observaciones</label><textarea x-model="form.observaciones"></textarea></div>
+                    </div>
+                  </template>
+
+                </div>
+
+                <div class="drawer-footer">
+                  <template x-if="drawerMode === 'view'">
+                    <template x-if="canWrite">
+                      <button class="btn btn-danger" @click="deleteCurrent()">Eliminar</button>
+                    </template>
+                  </template>
+                  <div class="spacer"></div>
+                  <template x-if="drawerMode === 'view'">
+                    <button class="btn btn-ghost" @click="closeDrawer()">Cerrar</button>
+                  </template>
+                  <template x-if="drawerMode === 'view' && canWrite">
+                    <button class="btn btn-primary" @click="startEdit()">Editar</button>
+                  </template>
+                  <template x-if="drawerMode === 'create' || drawerMode === 'edit'">
+                    <button class="btn btn-ghost" @click="cancelEdit()">Cancelar</button>
+                  </template>
+                  <template x-if="drawerMode === 'create' || drawerMode === 'edit'">
+                    <button class="btn btn-primary" :disabled="saving" @click="saveForm()">
+                      <span x-show="!saving">Guardar</span>
+                      <span x-show="saving">Guardando…</span>
+                    </button>
+                  </template>
+                </div>
+
+              </div>
+            </div>
+          </template>
+
+        </div>
+      </template>
+
       <!-- ---------- Secciones aún no construidas ---------- -->
-      <template x-if="activeSection !== 'dashboard'">
+      <template x-if="activeSection !== 'dashboard' && activeSection !== 'difuntos'">
         <div class="panel placeholder-panel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9z"/>

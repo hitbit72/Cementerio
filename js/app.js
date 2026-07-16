@@ -54,6 +54,10 @@ function appShell() {
         this.profile = { email: session.user.email, nombre: null, role: 'consulta' };
       }
 
+      // Otras secciones (Difuntos, Propietarios...) leen el rol desde aquí,
+      // sin depender directamente del componente appShell.
+      Alpine.store('session').profile = this.profile;
+
       window.addEventListener('hashchange', () => {
         this.activeSection = (location.hash || '#dashboard').replace('#', '');
       });
@@ -125,5 +129,6 @@ const NAV_ICONS = {
 };
 
 document.addEventListener('alpine:init', () => {
+  Alpine.store('session', { profile: null });
   Alpine.data('appShell', appShell);
 });
