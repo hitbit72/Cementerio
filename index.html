@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro del Cementerio · Ayuntamiento de Jimena</title>
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+</head>
+<body>
+
+<div class="app-shell" x-data="appShell()" x-init="init()" x-cloak>
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar" :class="{ open: sidebarOpen }">
+
+    <div class="sidebar-brand">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 2 L26 14 L22 14 L28 24 L23 24 L30 34 L10 34 L17 24 L12 24 L18 14 L14 14 Z" fill="currentColor"/>
+        <rect x="18.5" y="34" width="3" height="4" fill="currentColor"/>
+      </svg>
+      <div>
+        <div class="name">Registro del<br>Cementerio</div>
+        <div class="place">Ayuntamiento de Jimena</div>
+      </div>
+    </div>
+
+    <template x-for="section in visibleNavSections" :key="section.label">
+      <div>
+        <div class="nav-section-label" x-text="section.label"></div>
+        <ul class="nav-list">
+          <template x-for="item in section.items" :key="item.key">
+            <li class="nav-item">
+              <button class="nav-link" :class="{ active: activeSection === item.key }" @click="goTo(item.key)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     x-html="NAV_ICONS[item.icon]"></svg>
+                <span x-text="item.label"></span>
+              </button>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </template>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" x-text="initials"></div>
+        <div class="who">
+          <div class="email" x-text="profile?.nombre || profile?.email"></div>
+          <div class="role" x-text="profile?.role"></div>
+        </div>
+      </div>
+      <button class="logout-link" @click="signOut()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <path d="M16 17l5-5-5-5"/>
+          <path d="M21 12H9"/>
+        </svg>
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- backdrop móvil -->
+  <div x-show="sidebarOpen" @click="sidebarOpen = false" x-cloak
+       style="position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:30;"></div>
+
+  <!-- ===================== MAIN ===================== -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="breadcrumb">Cementerio Municipal</div>
+        <h2 x-text="sectionTitle"></h2>
+      </div>
+      <button class="menu-toggle" @click="sidebarOpen = !sidebarOpen" aria-label="Abrir menú">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </header>
+
+    <main class="content">
+
+      <!-- ---------- Panel / Dashboard ---------- -->
+      <template x-if="activeSection === 'dashboard'">
+        <div>
+          <div class="card-grid">
+            <div class="stat-card">
+              <div class="label">Difuntos registrados</div>
+              <div class="value" :class="{ loading: statsLoading }" x-text="statsLoading ? '···' : stats.difuntos"></div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Nichos ocupados</div>
+              <div class="value" :class="{ loading: statsLoading }" x-text="statsLoading ? '···' : stats.nichosOcupados"></div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Nichos vacíos</div>
+              <div class="value" :class="{ loading: statsLoading }" x-text="statsLoading ? '···' : stats.nichosVacios"></div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Propietarios</div>
+              <div class="value" :class="{ loading: statsLoading }" x-text="statsLoading ? '···' : stats.propietarios"></div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Recibos pendientes</div>
+              <div class="value" :class="{ loading: statsLoading }" x-text="statsLoading ? '···' : stats.recibosPendientes"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Bienvenido<span x-show="profile?.nombre">, <span x-text="profile.nombre"></span></span></h3>
+            <p style="color:var(--color-ink-soft); margin:0;">
+              Usa el menú lateral para consultar sectores, nichos, difuntos, propietarios y recibos.
+              Tu rol actual es <strong x-text="profile?.role"></strong>.
+            </p>
+          </div>
+        </div>
+      </template>
+
+      <!-- ---------- Secciones aún no construidas ---------- -->
+      <template x-if="activeSection !== 'dashboard'">
+        <div class="panel placeholder-panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9z"/>
+            <path d="M12 12v8M12 12l8-4.5M12 12L4 7.5"/>
+          </svg>
+          <h3 x-text="sectionTitle"></h3>
+          <p>Esta sección está pendiente de construir.</p>
+        </div>
+      </template>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

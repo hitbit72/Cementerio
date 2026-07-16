@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar sesión · Registro del Cementerio</title>
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+<script src="js/config.js"></script>
+</head>
+<body>
+
+<div class="login-page"
+     x-data="loginForm()"
+     x-init="redirectIfLoggedIn()">
+
+  <form class="plaque" @submit.prevent="submit">
+
+    <!-- Icono: ciprés estilizado, árbol tradicional del cementerio -->
+    <svg class="plaque-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 2 L26 14 L22 14 L28 24 L23 24 L30 34 L10 34 L17 24 L12 24 L18 14 L14 14 Z" fill="currentColor"/>
+      <rect x="18.5" y="34" width="3" height="4" fill="currentColor"/>
+    </svg>
+
+    <h1>Registro del Cementerio</h1>
+    <div class="subtitle">Ayuntamiento de Jimena</div>
+
+    <template x-if="errorMsg">
+      <div class="error-banner" x-text="errorMsg"></div>
+    </template>
+
+    <div class="field">
+      <label for="email">Correo electrónico</label>
+      <input id="email" type="email" x-model="email" autocomplete="username" required>
+    </div>
+
+    <div class="field">
+      <label for="password">Contraseña</label>
+      <input id="password" type="password" x-model="password" autocomplete="current-password" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary" :disabled="loading">
+      <span x-show="!loading">Entrar</span>
+      <span x-show="loading">Comprobando…</span>
+    </button>
+
+  </form>
+</div>
+
+<script>
+function loginForm() {
+  return {
+    email: '',
+    password: '',
+    loading: false,
+    errorMsg: '',
+
+    async redirectIfLoggedIn() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) window.location.href = 'index.html';
+    },
+
+    async submit() {
+      this.errorMsg = '';
+      this.loading = true;
+      const { error } = await sb.auth.signInWithPassword({
+        email: this.email,
+        password: this.password,
+      });
+      this.loading = false;
+
+      if (error) {
+        this.errorMsg = error.message === 'Invalid login credentials'
+          ? 'Correo o contraseña incorrectos.'
+          : 'No se ha podido iniciar sesión. Inténtalo de nuevo.';
+        return;
+      }
+      window.location.href = 'index.html';
+    },
+  };
+}
+</script>
+
+</body>
+</html>
