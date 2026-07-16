@@ -234,6 +234,7 @@ function difuntosSection() {
         apellidos: this.form.apellidos?.trim() || null,
         fnacido: this.form.fnacido || null,
         ffallecido: this.form.ffallecido || null,
+        edad: (this.form.edad === '' || this.form.edad === null || isNaN(parseInt(this.form.edad, 10))) ? null : parseInt(this.form.edad, 10),
         causa: this.form.causa || null,
         direccion: this.form.direccion || null,
         poblacion_id: this.form.poblacion_id || null,
