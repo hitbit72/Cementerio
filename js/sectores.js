@@ -56,6 +56,48 @@ function sectoresSection() {
         .sort((a, b) => (a.numero_nicho || 0) - (b.numero_nicho || 0));
     },
 
+    // Disposición visual del sector: una cuadrícula filas×columnas donde cada
+    // celda es un número de nicho, coloreada según su estado.
+    //
+    // Regla de numeración (igual que en la app de AppSheet original):
+    //   - orden = 1 → se empieza por la columna de la DERECHA, avanzando hacia la izquierda.
+    //   - orden = 0 → se empieza por la columna de la IZQUIERDA, avanzando hacia la derecha.
+    //   - dentro de cada columna, se numera siempre de ABAJO hacia ARRIBA.
+    //   - al terminar una columna, se pasa a la siguiente en esa misma dirección.
+    get dispositionGrid() {
+      if (!this.current) return null;
+      const filas = parseInt(this.current.filas, 10) || 0;
+      const columnas = parseInt(this.current.columnas, 10) || 0;
+      const inicio = parseInt(this.current.inicio, 10) || 1;
+      const orden = parseInt(this.current.orden, 10) || 0;
+      if (filas <= 0 || columnas <= 0) return null;
+
+      const nichoPorNumero = {};
+      this.nichosForCurrent.forEach(n => { nichoPorNumero[n.numero_nicho] = n; });
+
+      const ordenColumnas = [];
+      if (orden === 1) {
+        for (let c = columnas - 1; c >= 0; c--) ordenColumnas.push(c);
+      } else {
+        for (let c = 0; c < columnas; c++) ordenColumnas.push(c);
+      }
+
+      // grid[fila][columna], fila 0 = arriba, fila (filas-1) = abajo
+      const numeros = Array.from({ length: filas }, () => new Array(columnas).fill(null));
+      let n = inicio;
+      for (const c of ordenColumnas) {
+        for (let r = filas - 1; r >= 0; r--) {
+          numeros[r][c] = n;
+          n++;
+        }
+      }
+
+      return numeros.map(fila => fila.map(numero => {
+        const nicho = nichoPorNumero[numero] || null;
+        return { numero, nicho, estado: nicho ? nicho.estado : null };
+      }));
+    },
+
     async init() {
       await Promise.all([this.fetchSectors(), this.fetchNichos(), this.fetchDifuntos()]);
       this.loading = false;

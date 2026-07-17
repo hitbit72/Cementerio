@@ -5,7 +5,7 @@
 function appShell() {
   return {
     // Estado
-    profile: null,
+    profile: { email: '', nombre: '', role: '' },
     sidebarOpen: false,
     activeSection: (location.hash || '#dashboard').replace('#', ''),
     statsLoading: true,

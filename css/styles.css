@@ -560,6 +560,12 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   margin: 1.4em 0;
 }
 
+.miniform-divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 0.5em 0;
+}
+
 .subsection-title {
   font-family: var(--font-display);
   font-size: 1.05rem;
@@ -662,3 +668,59 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   .form-grid { grid-template-columns: 1fr; }
   .def-list { grid-template-columns: 1fr; }
 }
+
+/* =====================================================================
+   DISPOSICIÓN VISUAL DE NICHOS (cuadrícula del sector)
+   ===================================================================== */
+
+.nicho-grid {
+  border-collapse: collapse;
+  margin: 0.6em 0 0.8em;
+}
+
+.nicho-cell {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: var(--color-surface);
+}
+
+.nicho-cell.cell-ocupado { background: var(--color-danger); color: #FFFFFF; border-color: var(--color-danger); }
+.nicho-cell.cell-vacio { background: #DFEBE0; color: var(--color-success); }
+.nicho-cell.cell-reservado { background: var(--color-accent); color: #FFFFFF; border-color: var(--color-accent); }
+.nicho-cell.cell-sincrear {
+  color: var(--color-ink-soft);
+  background-image: repeating-linear-gradient(45deg, var(--color-bg), var(--color-bg) 4px, var(--color-border) 4px, var(--color-border) 5px);
+}
+.nicho-cell.cell-clickable { cursor: pointer; }
+.nicho-cell.cell-clickable:hover { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+
+.grid-legend {
+  display: flex;
+  gap: 1.2em;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--color-ink-soft);
+  margin-bottom: 1.4em;
+}
+
+.grid-legend .dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 0.35em;
+  vertical-align: middle;
+}
+
+.dot-ocupado { background: var(--color-danger); }
+.dot-vacio { background: #DFEBE0; border: 1px solid var(--color-border); }
+.dot-reservado { background: var(--color-accent); }
+.dot-sincrear { background: var(--color-border); }

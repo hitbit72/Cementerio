@@ -12,6 +12,7 @@
 <script src="js/app.js"></script>
 <script src="js/difuntos.js"></script>
 <script src="js/sectores.js"></script>
+<script src="js/propietarios.js"></script>
 </head>
 <body>
 
@@ -115,9 +116,9 @@
           </div>
 
           <div class="panel">
-            <h3>Bienvenido<span x-show="profile?.nombre">, <span x-text="profile?.nombre"></span></span></h3>
+            <h3>Bienvenido<span x-show="profile?.nombre">, <span x-text="profile.nombre"></span></span></h3>
             <p style="color:var(--color-ink-soft); margin:0;">
-              Usa el menú lateral para consultar sectores, nichos, difuntos, propietarios y recibos.
+              Usa el menú lateral para consultar sectores, nichos, difuntos, propietarios y recibos.<br>
               Tu rol actual es <strong x-text="profile?.role"></strong>.
             </p>
           </div>
@@ -444,6 +445,44 @@
                         <div class="def-item"><div class="dt">Observaciones</div><div class="dd" x-text="current.observaciones || '—'"></div></div>
                       </div>
 
+                      <!-- ---------- Disposición visual ---------- -->
+                      <template x-if="dispositionGrid">
+                        <div>
+                          <h4 class="subsection-title">Disposición</h4>
+                          <div style="overflow-x:auto;">
+                            <table class="nicho-grid">
+                              <template x-for="(row, ridx) in dispositionGrid" :key="ridx">
+                                <tr>
+                                  <template x-for="cell in row" :key="cell.numero">
+                                    <td class="nicho-cell"
+                                        :class="{
+                                          'cell-ocupado': cell.estado === 'Ocupado',
+                                          'cell-vacio': cell.estado === 'Vacio',
+                                          'cell-reservado': cell.estado === 'Reservado',
+                                          'cell-sincrear': !cell.nicho,
+                                          'cell-clickable': cell.nicho && canWrite
+                                        }"
+                                        :title="'Nº ' + cell.numero + (cell.nicho ? (' · ' + (cell.estado || 'Sin estado')) : ' · sin crear')"
+                                        @click="cell.nicho && canWrite && openNichoEdit(cell.nicho)"
+                                        x-text="cell.numero">
+                                    </td>
+                                  </template>
+                                </tr>
+                              </template>
+                            </table>
+                          </div>
+                          <div class="grid-legend">
+                            <span><i class="dot dot-ocupado"></i> Ocupado</span>
+                            <span><i class="dot dot-vacio"></i> Vacío</span>
+                            <span><i class="dot dot-reservado"></i> Reservado</span>
+                            <span><i class="dot dot-sincrear"></i> Sin crear</span>
+                          </div>
+                        </div>
+                      </template>
+                      <template x-if="!dispositionGrid">
+                        <p class="muted">Define filas y columnas en el sector para ver aquí su disposición visual.</p>
+                      </template>
+
                       <hr class="section-divider">
 
                       <!-- ---------- Nichos del sector ---------- -->
@@ -459,47 +498,26 @@
                           <button class="btn btn-primary btn-sm" @click="openNichoCreate()">+ Nicho</button>
                         </div>
                       </div>
+                      
+                      <hr class="miniform-divider">
 
-                      <template x-if="nichosForCurrent.length === 0">
-                        <p class="muted">Este sector todavía no tiene nichos. Puedes añadirlos uno a uno, o generarlos automáticamente a partir de filas × columnas.</p>
-                      </template>
-
-                      <template x-for="n in nichosForCurrent" :key="n.id">
-                        <div class="familiar-row">
-                          <div>
-                            <div class="familiar-name">
-                              Nº <span x-text="n.numero_nicho"></span>
-                              <span class="tag" :class="{
-                                'tag-ocupado': n.estado === 'Ocupado',
-                                'tag-vacio': n.estado === 'Vacio',
-                                'tag-reservado': n.estado === 'Reservado'
-                              }" x-text="n.estado || 'Sin estado'"></span>
-                            </div>
-                            <template x-if="ocupantesFor(n.id).length > 0">
-                              <div class="familiar-meta">
-                                Ocupado por:
-                                <template x-for="(d, idx) in ocupantesFor(n.id)" :key="d.id">
-                                  <span x-text="(idx > 0 ? ', ' : '') + d.nombre + ' ' + (d.apellidos || '')"></span>
-                                </template>
-                              </div>
-                            </template>
-                            <template x-if="n.observaciones">
-                              <div class="familiar-meta" x-text="n.observaciones"></div>
-                            </template>
-                          </div>
-                          <div style="display:flex; gap:0.4em;" x-show="canWrite">
-                            <button class="btn btn-ghost btn-sm" @click="openNichoEdit(n)">Editar</button>
-                            <button class="btn btn-danger btn-sm" @click="deleteNicho(n)">Eliminar</button>
-                          </div>
-                        </div>
-                      </template>
-
-                      <!-- ---------- Mini formulario nicho ---------- -->
+                      <!-- ---------- Mini formulario nicho (arriba del listado) ---------- -->
                       <template x-if="nichoFormOpen">
                         <div class="add-familiar-box">
                           <template x-if="nichoFormError">
                             <div class="error-banner" x-text="nichoFormError"></div>
                           </template>
+
+                          <!-- nombre de los difuntos -->
+                          <template x-if="ocupantesFor(nichoForm.id).length > 0">
+                              <div class="familiar-meta" style="margin-bottom:0.7em;">
+                                Ocupado por:
+                                <template x-for="(d, idx) in ocupantesFor(nichoForm.id)" :key="d.id">
+                                  <span x-text="(idx > 0 ? ', ' : '') + d.nombre + ' ' + (d.apellidos || '')"></span>
+                                </template>
+                              </div>
+                          </template>
+
                           <div class="form-grid">
                             <div class="field"><label>Número de nicho *</label><input type="number" min="1" x-model="nichoForm.numero_nicho"></div>
 
@@ -530,6 +548,40 @@
                               <span x-show="!nichoSaving">Guardar nicho</span>
                               <span x-show="nichoSaving">Guardando…</span>
                             </button>
+                          </div>
+                        </div>
+                      </template>
+
+                      <template x-if="nichosForCurrent.length === 0">
+                        <p class="muted">Este sector todavía no tiene nichos. Puedes añadirlos uno a uno, o generarlos automáticamente a partir de filas × columnas.</p>
+                      </template>
+
+                      <template x-for="n in nichosForCurrent" :key="n.id">
+                        <div class="familiar-row">
+                          <div>
+                            <div class="familiar-name">
+                              Nº <span x-text="n.numero_nicho"></span>
+                              <span class="tag" :class="{
+                                'tag-ocupado': n.estado === 'Ocupado',
+                                'tag-vacio': n.estado === 'Vacio',
+                                'tag-reservado': n.estado === 'Reservado'
+                              }" x-text="n.estado || 'Sin estado'"></span>
+                            </div>
+                            <template x-if="ocupantesFor(n.id).length > 0">
+                              <div class="familiar-meta">
+                                Ocupado por:
+                                <template x-for="(d, idx) in ocupantesFor(n.id)" :key="d.id">
+                                  <span x-text="(idx > 0 ? ', ' : '') + d.nombre + ' ' + (d.apellidos || '')"></span>
+                                </template>
+                              </div>
+                            </template>
+                            <template x-if="n.observaciones">
+                              <div class="familiar-meta" x-text="n.observaciones"></div>
+                            </template>
+                          </div>
+                          <div style="display:flex; gap:0.4em; width: 30%" x-show="canWrite">
+                            <button class="btn btn-ghost btn-sm" @click="openNichoEdit(n)">Editar</button>
+                            <button class="btn btn-danger btn-sm" @click="deleteNicho(n)">Eliminar</button>
                           </div>
                         </div>
                       </template>
@@ -593,8 +645,228 @@
         </div>
       </template>
 
+      <!-- ---------- Propietarios ---------- -->
+      <template x-if="activeSection === 'propietarios'">
+        <div x-data="propietariosSection()" x-init="init()">
+
+          <div class="toolbar">
+            <input class="search-input" type="text" placeholder="Buscar por nombre, apellidos, apodo, DNI o teléfono…"
+                   x-model="search" @input="onSearchInput()">
+            <button class="btn btn-primary" x-show="canWrite" @click="openCreate()">+ Nuevo propietario</button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Apellidos</th>
+                <th>Apodo</th>
+                <th>Teléfono</th>
+                <th>Difuntos asociados</th>
+                <th>Población</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-if="loading">
+                <tr><td colspan="6" class="table-empty">Cargando…</td></tr>
+              </template>
+              <template x-if="!loading && rows.length === 0">
+                <tr><td colspan="6" class="table-empty">No se han encontrado propietarios con esos filtros.</td></tr>
+              </template>
+              <template x-if="!loading">
+                <template x-for="row in rows" :key="row.id">
+                  <tr @click="openDetail(row)">
+                    <td x-text="row.nombre"></td>
+                    <td x-text="row.apellidos || '—'"></td>
+                    <td x-text="row.mote || '—'"></td>
+                    <td x-text="row.telefono || '—'"></td>
+                    <td x-text="countFor(row.id)"></td>
+                    <td x-text="row.poblacion?.nombre || '—'"></td>
+                  </tr>
+                </template>
+              </template>
+            </tbody>
+          </table>
+
+          <div class="pagination" x-show="!loading && totalCount > 0">
+            <span>
+              Página <span x-text="page + 1"></span> de <span x-text="totalPages"></span>
+              (<span x-text="totalCount"></span> registros)
+            </span>
+            <div class="controls">
+              <button class="btn btn-ghost btn-sm" @click="prevPage()" :disabled="page === 0">Anterior</button>
+              <button class="btn btn-ghost btn-sm" @click="nextPage()" :disabled="page + 1 >= totalPages">Siguiente</button>
+            </div>
+          </div>
+
+          <!-- ===================== DRAWER DE DETALLE / EDICIÓN ===================== -->
+          <template x-if="drawerOpen">
+            <div>
+              <div class="drawer-backdrop" @click="closeDrawer()"></div>
+              <div class="drawer">
+
+                <div class="drawer-header">
+                  <div>
+                    <template x-if="drawerMode === 'create'"><h3>Nuevo propietario</h3></template>
+                    <template x-if="drawerMode !== 'create'">
+                      <h3 x-text="current ? (current.nombre + ' ' + (current.apellidos || '')) : 'Cargando…'"></h3>
+                    </template>
+                    <template x-if="drawerMode === 'edit'"><div class="muted">Editando ficha</div></template>
+                  </div>
+                  <button class="drawer-close" @click="closeDrawer()" aria-label="Cerrar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+
+                <div class="drawer-body">
+
+                  <template x-if="formError">
+                    <div class="error-banner" x-text="formError"></div>
+                  </template>
+
+                  <!-- ---------- MODO VISTA ---------- -->
+                  <template x-if="drawerMode === 'view' && current">
+                    <div>
+                      <div class="def-list">
+                        <div class="def-item"><div class="dt">Apodo</div><div class="dd" x-text="current.mote || '—'"></div></div>
+                        <div class="def-item"><div class="dt">DNI</div><div class="dd" x-text="current.dni || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Teléfono</div><div class="dd" x-text="current.telefono || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Email</div><div class="dd" x-text="current.email || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Población</div><div class="dd" x-text="current.poblacion?.nombre || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Provincia</div><div class="dd" x-text="current.provincia?.nombre || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Dirección</div><div class="dd" x-text="current.direccion || '—'"></div></div>
+                        <div class="def-item"><div class="dt">CP</div><div class="dd" x-text="current.cp || '—'"></div></div>
+                      </div>
+                      <div class="def-list full">
+                        <div class="def-item"><div class="dt">Observaciones</div><div class="dd" x-text="current.observaciones || '—'"></div></div>
+                      </div>
+
+                      <hr class="section-divider">
+
+                      <!-- ---------- Difuntos asociados ---------- -->
+                      <h4 class="subsection-title">Difuntos asociados</h4>
+
+                      <template x-if="difuntosLoading">
+                        <p class="muted">Cargando…</p>
+                      </template>
+
+                      <template x-if="!difuntosLoading && difuntos.length === 0">
+                        <p class="muted">No hay difuntos asociados todavía.</p>
+                      </template>
+
+                      <template x-for="rel in difuntos" :key="rel.id">
+                        <div class="familiar-row">
+                          <div>
+                            <div class="familiar-name" x-text="(rel.difunto?.nombre || '') + ' ' + (rel.difunto?.apellidos || '')"></div>
+                            <div class="familiar-meta" x-text="rel.difunto?.num_registro ? ('Nº Registro ' + rel.difunto.num_registro) : ''"></div>
+                          </div>
+                          <div style="display:flex; align-items:center; gap:0.6em;">
+                            <span class="tag" x-show="rel.relacion" x-text="rel.relacion"></span>
+                            <button class="btn btn-ghost btn-sm" x-show="canWrite" @click="removeDifunto(rel)">Quitar</button>
+                          </div>
+                        </div>
+                      </template>
+
+                      <template x-if="canWrite">
+                        <div class="add-familiar-box">
+                          <div class="field" style="position:relative; margin-bottom:0.6em;">
+                            <label>Añadir difunto existente</label>
+                            <input type="text" placeholder="Busca por nombre, apellidos o nº de registro…"
+                                   x-model="difSearch" @input="onDifSearchInput()">
+                            <div class="autocomplete-results" x-show="difResults.length > 0">
+                              <template x-for="d in difResults" :key="d.id">
+                                <button type="button" @click="pickDifunto(d)" x-text="d.nombre + ' ' + (d.apellidos || '') + (d.num_registro ? ' · Nº ' + d.num_registro : '')"></button>
+                              </template>
+                            </div>
+                          </div>
+                          <div class="field" style="margin-bottom:0.6em;">
+                            <label>Relación (ej. Hijo/a, Nieto/a)</label>
+                            <input type="text" x-model="difRelacion">
+                          </div>
+                          <button class="btn btn-primary btn-sm" :disabled="!difSelected || difSaving" @click="addDifunto()">
+                            <span x-show="!difSaving">Añadir</span>
+                            <span x-show="difSaving">Añadiendo…</span>
+                          </button>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+
+                  <!-- ---------- MODO CREAR / EDITAR ---------- -->
+                  <template x-if="drawerMode === 'create' || drawerMode === 'edit'">
+                    <div class="form-grid">
+                      <div class="field"><label>Nombre *</label><input type="text" x-model="form.nombre" required></div>
+                      <div class="field"><label>Apellidos</label><input type="text" x-model="form.apellidos"></div>
+
+                      <div class="field"><label>Apodo</label><input type="text" x-model="form.mote"></div>
+                      <div class="field"><label>DNI</label><input type="text" x-model="form.dni"></div>
+
+                      <div class="field"><label>Teléfono</label><input type="text" x-model="form.telefono"></div>
+                      <div class="field"><label>Email</label><input type="email" x-model="form.email"></div>
+
+                      <div class="field span-2"><label>Dirección</label><input type="text" x-model="form.direccion"></div>
+
+                      <div class="field">
+                        <label>Población</label>
+                        <select x-model="form.poblacion_id">
+                          <option value="">— Sin especificar —</option>
+                          <template x-for="p in poblaciones" :key="p.id">
+                            <option :value="p.id" :selected="p.id === form.poblacion_id" x-text="p.nombre"></option>
+                          </template>
+                        </select>
+                      </div>
+
+                      <div class="field">
+                        <label>Provincia</label>
+                        <select x-model="form.provincia_id">
+                          <option value="">— Sin especificar —</option>
+                          <template x-for="pr in provincias" :key="pr.id">
+                            <option :value="pr.id" :selected="pr.id === form.provincia_id" x-text="pr.nombre"></option>
+                          </template>
+                        </select>
+                      </div>
+
+                      <div class="field"><label>CP</label><input type="text" x-model="form.cp"></div>
+
+                      <div class="field span-2"><label>Observaciones</label><textarea x-model="form.observaciones"></textarea></div>
+                    </div>
+                  </template>
+
+                </div>
+
+                <div class="drawer-footer">
+                  <template x-if="drawerMode === 'view'">
+                    <template x-if="canWrite">
+                      <button class="btn btn-danger" @click="deleteCurrent()">Eliminar</button>
+                    </template>
+                  </template>
+                  <div class="spacer"></div>
+                  <template x-if="drawerMode === 'view'">
+                    <button class="btn btn-ghost" @click="closeDrawer()">Cerrar</button>
+                  </template>
+                  <template x-if="drawerMode === 'view' && canWrite">
+                    <button class="btn btn-primary" @click="startEdit()">Editar</button>
+                  </template>
+                  <template x-if="drawerMode === 'create' || drawerMode === 'edit'">
+                    <button class="btn btn-ghost" @click="cancelEdit()">Cancelar</button>
+                  </template>
+                  <template x-if="drawerMode === 'create' || drawerMode === 'edit'">
+                    <button class="btn btn-primary" :disabled="saving" @click="saveForm()">
+                      <span x-show="!saving">Guardar</span>
+                      <span x-show="saving">Guardando…</span>
+                    </button>
+                  </template>
+                </div>
+
+              </div>
+            </div>
+          </template>
+
+        </div>
+      </template>
+
       <!-- ---------- Secciones aún no construidas ---------- -->
-      <template x-if="activeSection !== 'dashboard' && activeSection !== 'difuntos' && activeSection !== 'sectores'">
+      <template x-if="activeSection !== 'dashboard' && activeSection !== 'difuntos' && activeSection !== 'sectores' && activeSection !== 'propietarios'">
         <div class="panel placeholder-panel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9z"/>
