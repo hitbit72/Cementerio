@@ -616,7 +616,12 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   background: var(--color-accent-soft);
   color: var(--color-primary-dark);
   font-weight: 600;
+  margin-left: 0.5em;
 }
+
+.tag-ocupado { background: var(--color-danger-soft); color: var(--color-danger); }
+.tag-vacio { background: #DFEBE0; color: var(--color-success); }
+.tag-reservado { background: var(--color-accent-soft); color: var(--color-accent2, var(--color-primary-dark)); }
 
 .add-familiar-box {
   position: relative;

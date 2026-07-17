@@ -11,6 +11,7 @@
 <script src="js/auth.js"></script>
 <script src="js/app.js"></script>
 <script src="js/difuntos.js"></script>
+<script src="js/sectores.js"></script>
 </head>
 <body>
 
@@ -363,8 +364,237 @@
         </div>
       </template>
 
+      <!-- ---------- Sectores ---------- -->
+      <template x-if="activeSection === 'sectores'">
+        <div x-data="sectoresSection()" x-init="init()">
+
+          <div class="toolbar">
+            <input class="search-input" type="text" placeholder="Buscar por nombre o situación…" x-model="search">
+            <button class="btn btn-primary" x-show="canManageSector" @click="openCreate()">+ Nuevo sector</button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Sector</th>
+                <th>Tipo</th>
+                <th>Nichos</th>
+                <th>Ocupados</th>
+                <th>Vacíos</th>
+                <th>Situación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-if="loading">
+                <tr><td colspan="6" class="table-empty">Cargando…</td></tr>
+              </template>
+              <template x-if="!loading && filteredSectors.length === 0">
+                <tr><td colspan="6" class="table-empty">No se han encontrado sectores.</td></tr>
+              </template>
+              <template x-if="!loading">
+                <template x-for="s in filteredSectors" :key="s.id">
+                  <tr @click="openDetail(s)">
+                    <td x-text="s.nombre"></td>
+                    <td x-text="s.tipo"></td>
+                    <td x-text="statsFor(s.id).total"></td>
+                    <td x-text="statsFor(s.id).ocupados"></td>
+                    <td x-text="statsFor(s.id).vacios"></td>
+                    <td x-text="s.situacion || '—'"></td>
+                  </tr>
+                </template>
+              </template>
+            </tbody>
+          </table>
+
+          <!-- ===================== DRAWER DE SECTOR ===================== -->
+          <template x-if="drawerOpen">
+            <div>
+              <div class="drawer-backdrop" @click="closeDrawer()"></div>
+              <div class="drawer">
+
+                <div class="drawer-header">
+                  <div>
+                    <template x-if="drawerMode === 'create'"><h3>Nuevo sector</h3></template>
+                    <template x-if="drawerMode !== 'create'">
+                      <h3 x-text="current ? current.nombre : ''"></h3>
+                    </template>
+                    <template x-if="drawerMode === 'edit'"><div class="muted">Editando sector</div></template>
+                  </div>
+                  <button class="drawer-close" @click="closeDrawer()" aria-label="Cerrar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+
+                <div class="drawer-body">
+
+                  <template x-if="formError">
+                    <div class="error-banner" x-text="formError"></div>
+                  </template>
+
+                  <!-- ---------- MODO VISTA ---------- -->
+                  <template x-if="drawerMode === 'view' && current">
+                    <div>
+                      <div class="def-list">
+                        <div class="def-item"><div class="dt">Tipo</div><div class="dd" x-text="current.tipo"></div></div>
+                        <div class="def-item"><div class="dt">Situación</div><div class="dd" x-text="current.situacion || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Filas × Columnas</div><div class="dd" x-text="(current.filas ?? 0) + ' × ' + (current.columnas ?? 0)"></div></div>
+                        <div class="def-item"><div class="dt">Nº inicial</div><div class="dd" x-text="current.inicio ?? '—'"></div></div>
+                      </div>
+                      <div class="def-list full">
+                        <div class="def-item"><div class="dt">Observaciones</div><div class="dd" x-text="current.observaciones || '—'"></div></div>
+                      </div>
+
+                      <hr class="section-divider">
+
+                      <!-- ---------- Nichos del sector ---------- -->
+                      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.7em;">
+                        <h4 class="subsection-title" style="margin:0;">
+                          Nichos (<span x-text="nichosForCurrent.length"></span>)
+                        </h4>
+                        <div style="display:flex; gap:0.5em;" x-show="canWrite">
+                          <button class="btn btn-ghost btn-sm" x-show="nichosForCurrent.length === 0" :disabled="generating" @click="generarNichos()">
+                            <span x-show="!generating">Generar automáticamente</span>
+                            <span x-show="generating">Generando…</span>
+                          </button>
+                          <button class="btn btn-primary btn-sm" @click="openNichoCreate()">+ Nicho</button>
+                        </div>
+                      </div>
+
+                      <template x-if="nichosForCurrent.length === 0">
+                        <p class="muted">Este sector todavía no tiene nichos. Puedes añadirlos uno a uno, o generarlos automáticamente a partir de filas × columnas.</p>
+                      </template>
+
+                      <template x-for="n in nichosForCurrent" :key="n.id">
+                        <div class="familiar-row">
+                          <div>
+                            <div class="familiar-name">
+                              Nº <span x-text="n.numero_nicho"></span>
+                              <span class="tag" :class="{
+                                'tag-ocupado': n.estado === 'Ocupado',
+                                'tag-vacio': n.estado === 'Vacio',
+                                'tag-reservado': n.estado === 'Reservado'
+                              }" x-text="n.estado || 'Sin estado'"></span>
+                            </div>
+                            <template x-if="ocupantesFor(n.id).length > 0">
+                              <div class="familiar-meta">
+                                Ocupado por:
+                                <template x-for="(d, idx) in ocupantesFor(n.id)" :key="d.id">
+                                  <span x-text="(idx > 0 ? ', ' : '') + d.nombre + ' ' + (d.apellidos || '')"></span>
+                                </template>
+                              </div>
+                            </template>
+                            <template x-if="n.observaciones">
+                              <div class="familiar-meta" x-text="n.observaciones"></div>
+                            </template>
+                          </div>
+                          <div style="display:flex; gap:0.4em;" x-show="canWrite">
+                            <button class="btn btn-ghost btn-sm" @click="openNichoEdit(n)">Editar</button>
+                            <button class="btn btn-danger btn-sm" @click="deleteNicho(n)">Eliminar</button>
+                          </div>
+                        </div>
+                      </template>
+
+                      <!-- ---------- Mini formulario nicho ---------- -->
+                      <template x-if="nichoFormOpen">
+                        <div class="add-familiar-box">
+                          <template x-if="nichoFormError">
+                            <div class="error-banner" x-text="nichoFormError"></div>
+                          </template>
+                          <div class="form-grid">
+                            <div class="field"><label>Número de nicho *</label><input type="number" min="1" x-model="nichoForm.numero_nicho"></div>
+
+                            <template x-if="nichoFormOcupado">
+                              <div class="field">
+                                <label>Estado</label>
+                                <div>
+                                  <span class="tag tag-ocupado">Ocupado</span>
+                                  <div class="muted" style="font-size:0.78rem; margin-top:0.3em;">Se calcula solo a partir del difunto asignado.</div>
+                                </div>
+                              </div>
+                            </template>
+                            <template x-if="!nichoFormOcupado">
+                              <div class="field">
+                                <label>Estado</label>
+                                <label style="display:flex; align-items:center; gap:0.5em; font-weight:400; text-transform:none; letter-spacing:normal;">
+                                  <input type="checkbox" x-model="nichoForm.reservado" style="width:auto;">
+                                  Marcar como reservado
+                                </label>
+                                <div class="muted" style="font-size:0.78rem; margin-top:0.3em;">Si no lo marcas, queda como "Vacío" hasta que se le asigne un difunto.</div>
+                              </div>
+                            </template>
+                            <div class="field span-2"><label>Observaciones</label><textarea x-model="nichoForm.observaciones"></textarea></div>
+                          </div>
+                          <div style="display:flex; gap:0.6em;">
+                            <button class="btn btn-ghost btn-sm" @click="cancelNichoForm()">Cancelar</button>
+                            <button class="btn btn-primary btn-sm" :disabled="nichoSaving" @click="saveNichoForm()">
+                              <span x-show="!nichoSaving">Guardar nicho</span>
+                              <span x-show="nichoSaving">Guardando…</span>
+                            </button>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+
+                  <!-- ---------- MODO CREAR / EDITAR SECTOR ---------- -->
+                  <template x-if="drawerMode === 'create' || drawerMode === 'edit'">
+                    <div class="form-grid">
+                      <div class="field span-2"><label>Nombre *</label><input type="text" x-model="form.nombre" required></div>
+
+                      <div class="field">
+                        <label>Tipo</label>
+                        <select x-model="form.tipo">
+                          <option value="Nicho">Nicho</option>
+                          <option value="Tumba">Tumba</option>
+                        </select>
+                      </div>
+                      <div class="field"><label>Situación</label><input type="text" x-model="form.situacion"></div>
+
+                      <div class="field"><label>Filas</label><input type="number" min="0" x-model="form.filas"></div>
+                      <div class="field"><label>Columnas</label><input type="number" min="0" x-model="form.columnas"></div>
+                      <div class="field"><label>Nº inicial</label><input type="number" min="1" x-model="form.inicio"></div>
+                      <div class="field"><label>Orden</label><input type="number" min="0" x-model="form.orden"></div>
+
+                      <div class="field span-2"><label>Ruta del plano (imagen)</label><input type="text" x-model="form.plano_img" placeholder="p. ej. planos/sector-a.png"></div>
+                      <div class="field span-2"><label>Observaciones</label><textarea x-model="form.observaciones"></textarea></div>
+                    </div>
+                  </template>
+
+                </div>
+
+                <div class="drawer-footer">
+                  <template x-if="drawerMode === 'view'">
+                    <template x-if="canManageSector">
+                      <button class="btn btn-danger" @click="deleteCurrent()">Eliminar</button>
+                    </template>
+                  </template>
+                  <div class="spacer"></div>
+                  <template x-if="drawerMode === 'view'">
+                    <button class="btn btn-ghost" @click="closeDrawer()">Cerrar</button>
+                  </template>
+                  <template x-if="drawerMode === 'view' && canWrite">
+                    <button class="btn btn-primary" @click="startEdit()">Editar</button>
+                  </template>
+                  <template x-if="drawerMode === 'create' || drawerMode === 'edit'">
+                    <button class="btn btn-ghost" @click="cancelEdit()">Cancelar</button>
+                  </template>
+                  <template x-if="drawerMode === 'create' || drawerMode === 'edit'">
+                    <button class="btn btn-primary" :disabled="saving" @click="saveForm()">
+                      <span x-show="!saving">Guardar</span>
+                      <span x-show="saving">Guardando…</span>
+                    </button>
+                  </template>
+                </div>
+
+              </div>
+            </div>
+          </template>
+
+        </div>
+      </template>
+
       <!-- ---------- Secciones aún no construidas ---------- -->
-      <template x-if="activeSection !== 'dashboard' && activeSection !== 'difuntos'">
+      <template x-if="activeSection !== 'dashboard' && activeSection !== 'difuntos' && activeSection !== 'sectores'">
         <div class="panel placeholder-panel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9z"/>
