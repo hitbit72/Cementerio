@@ -1,4 +1,4 @@
-# Registro del Cementerio — Ayuntamiento de Jimena
+# Registro del Cementerio — Ayuntamientos
 
 Aplicación web de gestión municipal para el cementerio de Jimena: registro de
 difuntos, nichos y sectores, propietarios/familiares y recibos de pago.
