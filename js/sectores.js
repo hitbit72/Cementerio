@@ -1,19 +1,38 @@
 /* =====================================================================
    SECCIÓN SECTORES
    Listado de sectores + ficha de detalle con gestión de sus nichos.
-   Al ser un volumen de datos pequeño/medio (sectores y nichos), se carga
-   todo una vez al entrar y se filtra/agrupa en el cliente — evita ir a
-   buscar los nichos cada vez que se abre un sector.
+
+   IMPORTANTE (límite de 1000 filas de Supabase/PostgREST):
+   Antes esta sección cargaba TODOS los nichos y TODOS los difuntos con
+   nicho asignado de golpe al entrar (nichosAll/difuntosAll). Con ~1.480
+   difuntos, esa segunda consulta ya superaba el límite de 1000 filas por
+   defecto de Supabase, así que se recibía un subconjunto arbitrario y no
+   determinista (sin `order`) — algunos nichos podían mostrarse como
+   "Vacío" aunque en realidad tuvieran un difunto que simplemente no llegó
+   en esa tanda de 1000.
+
+   Ahora:
+     1. El LISTADO de sectores lee de la vista `v_sector_resumen` (ver
+        migracion_vista_sectores.sql / schema_cementerio.sql), que ya trae
+        los conteos (total, ocupados, vacíos, reservados) calculados en la
+        propia base de datos — una fila por sector, nunca un problema de
+        límite de filas.
+     2. Al abrir un sector, se piden SOLO los nichos de ESE sector, con sus
+        difuntos ya embebidos en la misma consulta (relación inversa
+        difunto.nicho_id → nichos.id). Como mucho serán unas pocas decenas
+        de nichos, muy lejos del límite.
    ===================================================================== */
 
 function sectoresSection() {
   return {
-    // ---------- Datos ----------
+    // ---------- Listado (desde la vista agregada) ----------
     sectors: [],
-    nichosAll: [],
-    difuntosAll: [],
     loading: true,
     search: '',
+
+    // ---------- Detalle del sector abierto ----------
+    nichosDetalle: [],       // nichos de `current`, cada uno con su array `difunto`
+    nichosDetalleLoading: false,
 
     // ---------- Drawer de sector ----------
     drawerOpen: false,
@@ -49,11 +68,10 @@ function sectoresSection() {
       );
     },
 
+    // Nichos del sector actualmente abierto, ya ordenados por número
+    // (la propia consulta a Supabase pide `.order('numero_nicho')`).
     get nichosForCurrent() {
-      if (!this.current) return [];
-      return this.nichosAll
-        .filter(n => n.sector_id === this.current.id)
-        .sort((a, b) => (a.numero_nicho || 0) - (b.numero_nicho || 0));
+      return this.nichosDetalle;
     },
 
     // Disposición visual del sector: una cuadrícula filas×columnas donde cada
@@ -99,40 +117,53 @@ function sectoresSection() {
     },
 
     async init() {
-      await Promise.all([this.fetchSectors(), this.fetchNichos(), this.fetchDifuntos()]);
+      await this.fetchSectors();
       this.loading = false;
     },
 
+    // Listado agregado: una fila por sector, con los conteos ya calculados
+    // en la base de datos (ver v_sector_resumen). Nunca puede chocar con el
+    // límite de 1000 filas: como mucho hay una fila por sector.
     async fetchSectors() {
-      const { data, error } = await sb.from('sector').select('*').order('orden').order('nombre');
-      if (error) { console.error(error); return; }
+      const { data, error } = await sb.from('v_sector_resumen').select('*').order('nombre');
+      if (error) { console.error('Error cargando sectores:', error); return; }
       this.sectors = data || [];
     },
 
-    async fetchNichos() {
-      const { data, error } = await sb.from('nichos').select('id, numero_nicho, sector_id, estado, observaciones');
-      if (error) { console.error(error); return; }
-      this.nichosAll = data || [];
+    // Vuelve a pedir solo la fila agregada de UN sector (tras dar de alta,
+    // editar o borrar un nicho), y la aplica tanto a la lista como a `current`
+    // para que el resumen (total/ocupados/vacíos) se refresque sin recargar
+    // todo el listado.
+    async refreshSectorSummary(sectorId) {
+      const { data, error } = await sb.from('v_sector_resumen').select('*').eq('id', sectorId).single();
+      if (error) { console.error('Error actualizando el resumen del sector:', error); return; }
+      const idx = this.sectors.findIndex(s => s.id === sectorId);
+      if (idx !== -1) this.sectors[idx] = data;
+      if (this.current && this.current.id === sectorId) {
+        this.current = { ...this.current, ...data };
+      }
     },
 
-    async fetchDifuntos() {
-      const { data, error } = await sb.from('difunto').select('id, nombre, apellidos, nicho_id').not('nicho_id', 'is', null);
-      if (error) { console.error(error); return; }
-      this.difuntosAll = data || [];
+    // Nichos de UN sector concreto, con sus difuntos ya embebidos. Acotado
+    // por sector_id, así que aunque el cementerio entero tenga miles de
+    // nichos, aquí solo llegan los de este sector (unas pocas decenas).
+    async loadNichosDetalle(sectorId) {
+      this.nichosDetalleLoading = true;
+      const { data, error } = await sb
+        .from('nichos')
+        .select('id, numero_nicho, sector_id, estado, observaciones, difunto(id, nombre, apellidos, ffallecido, edad, observaciones)')
+        .eq('sector_id', sectorId)
+        .order('numero_nicho');
+      this.nichosDetalleLoading = false;
+      if (error) { console.error('Error cargando los nichos del sector:', error); this.nichosDetalle = []; return; }
+      this.nichosDetalle = data || [];
     },
 
-    statsFor(sectorId) {
-      const nichos = this.nichosAll.filter(n => n.sector_id === sectorId);
-      return {
-        total: nichos.length,
-        ocupados: nichos.filter(n => n.estado === 'Ocupado').length,
-        vacios: nichos.filter(n => n.estado === 'Vacio').length,
-        reservados: nichos.filter(n => n.estado === 'Reservado').length,
-      };
-    },
-
+    // Difuntos que ocupan un nicho concreto (ya vienen embebidos en la
+    // consulta de loadNichosDetalle, sin necesidad de otra llamada).
     ocupantesFor(nichoId) {
-      return this.difuntosAll.filter(d => d.nicho_id === nichoId);
+      const n = this.nichosDetalle.find(x => x.id === nichoId);
+      return n?.difunto || [];
     },
 
     // ---------- Drawer sector: abrir ----------
@@ -145,12 +176,13 @@ function sectoresSection() {
       this.drawerOpen = true;
     },
 
-    openDetail(sector) {
+    async openDetail(sector) {
       this.drawerMode = 'view';
       this.current = sector;
       this.formError = '';
       this.nichoFormOpen = false;
       this.drawerOpen = true;
+      await this.loadNichosDetalle(sector.id);
     },
 
     startEdit() {
@@ -172,6 +204,7 @@ function sectoresSection() {
     closeDrawer() {
       this.drawerOpen = false;
       this.current = null;
+      this.nichosDetalle = [];
       this.nichoFormOpen = false;
     },
 
@@ -222,7 +255,7 @@ function sectoresSection() {
       try {
         const { error } = await sb.from('sector').delete().eq('id', this.current.id);
         if (error) throw error;
-        await Promise.all([this.fetchSectors(), this.fetchNichos()]);
+        await this.fetchSectors();
         this.closeDrawer();
       } catch (e) {
         console.error('Error eliminando sector:', e);
@@ -291,7 +324,10 @@ function sectoresSection() {
           const { error } = await sb.from('nichos').update(payload).eq('id', this.nichoForm.id);
           if (error) throw error;
         }
-        await this.fetchNichos();
+        await Promise.all([
+          this.loadNichosDetalle(this.current.id),
+          this.refreshSectorSummary(this.current.id),
+        ]);
         this.nichoFormOpen = false;
       } catch (e) {
         console.error('Error guardando nicho:', e);
@@ -308,7 +344,10 @@ function sectoresSection() {
       try {
         const { error } = await sb.from('nichos').delete().eq('id', n.id);
         if (error) throw error;
-        await this.fetchNichos();
+        await Promise.all([
+          this.loadNichosDetalle(this.current.id),
+          this.refreshSectorSummary(this.current.id),
+        ]);
       } catch (e) {
         console.error('Error eliminando nicho:', e);
         if (e.code === '23503') {
@@ -342,7 +381,10 @@ function sectoresSection() {
       try {
         const { error } = await sb.from('nichos').insert(nuevos);
         if (error) throw error;
-        await this.fetchNichos();
+        await Promise.all([
+          this.loadNichosDetalle(this.current.id),
+          this.refreshSectorSummary(this.current.id),
+        ]);
       } catch (e) {
         console.error('Error generando nichos:', e);
         alert('No se han podido generar los nichos. Puede que ya exista alguno con esos números.');

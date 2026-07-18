@@ -5,7 +5,7 @@
 function appShell() {
   return {
     // Estado
-    profile: { email: '', nombre: '', role: '' },
+    profile: null,
     sidebarOpen: false,
     activeSection: (location.hash || '#dashboard').replace('#', ''),
     statsLoading: true,
@@ -60,6 +60,16 @@ function appShell() {
 
       window.addEventListener('hashchange', () => {
         this.activeSection = (location.hash || '#dashboard').replace('#', '');
+      });
+
+      // Si el admin edita su propio rol/nombre desde la sección Usuarios,
+      // refresca aquí también (menú lateral, permisos de escritura, etc.)
+      window.addEventListener('own-profile-updated', async () => {
+        const fresh = await getProfile(session.user.id);
+        if (fresh) {
+          this.profile = fresh;
+          Alpine.store('session').profile = fresh;
+        }
       });
 
       this.loadStats();

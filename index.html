@@ -13,6 +13,8 @@
 <script src="js/difuntos.js"></script>
 <script src="js/sectores.js"></script>
 <script src="js/propietarios.js"></script>
+<script src="js/recibos.js"></script>
+<script src="js/usuarios.js"></script>
 </head>
 <body>
 
@@ -118,7 +120,7 @@
           <div class="panel">
             <h3>Bienvenido<span x-show="profile?.nombre">, <span x-text="profile.nombre"></span></span></h3>
             <p style="color:var(--color-ink-soft); margin:0;">
-              Usa el menú lateral para consultar sectores, nichos, difuntos, propietarios y recibos.<br>
+              Usa el menú lateral para consultar sectores, nichos, difuntos, propietarios y recibos.
               Tu rol actual es <strong x-text="profile?.role"></strong>.
             </p>
           </div>
@@ -397,9 +399,9 @@
                   <tr @click="openDetail(s)">
                     <td x-text="s.nombre"></td>
                     <td x-text="s.tipo"></td>
-                    <td x-text="statsFor(s.id).total"></td>
-                    <td x-text="statsFor(s.id).ocupados"></td>
-                    <td x-text="statsFor(s.id).vacios"></td>
+                    <td x-text="s.total_nichos"></td>
+                    <td x-text="s.nichos_ocupados"></td>
+                    <td x-text="s.nichos_vacios"></td>
                     <td x-text="s.situacion || '—'"></td>
                   </tr>
                 </template>
@@ -498,8 +500,6 @@
                           <button class="btn btn-primary btn-sm" @click="openNichoCreate()">+ Nicho</button>
                         </div>
                       </div>
-                      
-                      <hr class="miniform-divider">
 
                       <!-- ---------- Mini formulario nicho (arriba del listado) ---------- -->
                       <template x-if="nichoFormOpen">
@@ -552,38 +552,44 @@
                         </div>
                       </template>
 
-                      <template x-if="nichosForCurrent.length === 0">
+                      <template x-if="nichosDetalleLoading">
+                        <p class="muted">Cargando nichos…</p>
+                      </template>
+
+                      <template x-if="!nichosDetalleLoading && nichosForCurrent.length === 0">
                         <p class="muted">Este sector todavía no tiene nichos. Puedes añadirlos uno a uno, o generarlos automáticamente a partir de filas × columnas.</p>
                       </template>
 
-                      <template x-for="n in nichosForCurrent" :key="n.id">
-                        <div class="familiar-row">
-                          <div>
-                            <div class="familiar-name">
-                              Nº <span x-text="n.numero_nicho"></span>
-                              <span class="tag" :class="{
-                                'tag-ocupado': n.estado === 'Ocupado',
-                                'tag-vacio': n.estado === 'Vacio',
-                                'tag-reservado': n.estado === 'Reservado'
-                              }" x-text="n.estado || 'Sin estado'"></span>
-                            </div>
-                            <template x-if="ocupantesFor(n.id).length > 0">
-                              <div class="familiar-meta">
-                                Ocupado por:
-                                <template x-for="(d, idx) in ocupantesFor(n.id)" :key="d.id">
-                                  <span x-text="(idx > 0 ? ', ' : '') + d.nombre + ' ' + (d.apellidos || '')"></span>
-                                </template>
+                      <template x-if="!nichosDetalleLoading">
+                        <template x-for="n in nichosForCurrent" :key="n.id">
+                          <div class="familiar-row">
+                            <div class="familiar-caja">
+                              <div class="familiar-name">
+                                Nº <span x-text="n.numero_nicho"></span>
+                                <span class="tag" :class="{
+                                  'tag-ocupado': n.estado === 'Ocupado',
+                                  'tag-vacio': n.estado === 'Vacio',
+                                  'tag-reservado': n.estado === 'Reservado'
+                                }" x-text="n.estado || 'Sin estado'"></span>
                               </div>
-                            </template>
-                            <template x-if="n.observaciones">
-                              <div class="familiar-meta" x-text="n.observaciones"></div>
-                            </template>
+                              <template x-if="ocupantesFor(n.id).length > 0">
+                                <div class="familiar-meta">
+                                  Ocupado por:
+                                  <template x-for="(d, idx) in ocupantesFor(n.id)" :key="d.id">
+                                    <span x-text="(idx > 0 ? ', ' : '') + d.nombre + ' ' + (d.apellidos || '')"></span>
+                                  </template>
+                                </div>
+                              </template>
+                              <template x-if="n.observaciones">
+                                <div class="familiar-meta" x-text="n.observaciones"></div>
+                              </template>
+                            </div>
+                            <div style="display:flex; gap:0.4em;" x-show="canWrite">
+                              <button class="btn btn-ghost btn-sm" @click="openNichoEdit(n)">Editar</button>
+                              <button class="btn btn-danger btn-sm" @click="deleteNicho(n)">Eliminar</button>
+                            </div>
                           </div>
-                          <div style="display:flex; gap:0.4em; width: 30%" x-show="canWrite">
-                            <button class="btn btn-ghost btn-sm" @click="openNichoEdit(n)">Editar</button>
-                            <button class="btn btn-danger btn-sm" @click="deleteNicho(n)">Eliminar</button>
-                          </div>
-                        </div>
+                        </template>
                       </template>
                     </div>
                   </template>
@@ -758,7 +764,7 @@
                         <div class="familiar-row">
                           <div>
                             <div class="familiar-name" x-text="(rel.difunto?.nombre || '') + ' ' + (rel.difunto?.apellidos || '')"></div>
-                            <div class="familiar-meta" x-text="rel.difunto?.num_registro ? ('Nº Registro ' + rel.difunto.num_registro) : ''"></div>
+                            <div class="familiar-meta" x-text="rel.difunto?.ffallecido ? ('Fallecid@ ' + fmtDate(rel.difunto.ffallecido)) : ''"></div>
                           </div>
                           <div style="display:flex; align-items:center; gap:0.6em;">
                             <span class="tag" x-show="rel.relacion" x-text="rel.relacion"></span>
@@ -865,8 +871,353 @@
         </div>
       </template>
 
+      <!-- ---------- Recibos ---------- -->
+      <template x-if="activeSection === 'recibos'">
+        <div x-data="recibosSection()" x-init="init()">
+
+          <div class="toolbar">
+            <input class="search-input" type="text" placeholder="Buscar por expediente, nº documento, referencia, entidad o mutua…"
+                   x-model="search" @input="onSearchInput()">
+
+            <select class="select-input" x-model="sectorFiltro" @change="onFilterChange()">
+              <option value="">Todos los sectores</option>
+              <template x-for="s in sectores" :key="s.id">
+                <option :value="s.id" x-text="s.nombre"></option>
+              </template>
+            </select>
+
+            <select class="select-input" x-model="estadoFiltro" @change="onFilterChange()">
+              <option value="">Todos los estados</option>
+              <option value="Pagado">Pagado</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Anulado">Anulado</option>
+            </select>
+
+            <button class="btn btn-primary" x-show="canWrite" @click="openCreate()">+ Nuevo recibo</button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Sector/Nicho</th>
+                <th>Propietario/Familiar</th>
+                <th>Mutua</th>
+                <th>Fecha documento</th>
+                <th>Nº documento</th>
+                <th>Importe</th>
+                <th>Estado</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-if="loading">
+                <tr><td colspan="8" class="table-empty">Cargando…</td></tr>
+              </template>
+              <template x-if="!loading && rows.length === 0">
+                <tr><td colspan="8" class="table-empty">No se han encontrado recibos con esos filtros.</td></tr>
+              </template>
+              <template x-if="!loading">
+                <template x-for="row in rows" :key="row.id">
+                  <tr @click="openDetail(row)">
+                    <td x-text="ubicacion(row)"></td>
+                    <td x-text="propietarioLabel(row)"></td>
+                    <td x-text="row.mutua || '—'"></td>
+                    <td x-text="fmtDate(row.fecha)"></td>
+                    <td x-text="row.docnum || '—'"></td>
+                    <td x-text="fmtImporte(row.importe)"></td>
+                    <td>
+                      <span class="tag" :class="{
+                        'tag-ocupado': row.estado === 'Anulado',
+                        'tag-vacio': row.estado === 'Pagado',
+                        'tag-reservado': row.estado === 'Pendiente'
+                      }" x-text="row.estado"></span>
+                    </td>
+                    <td x-text="row.observaciones || '—'"></td>
+                  </tr>
+                </template>
+              </template>
+            </tbody>
+          </table>
+
+          <div class="pagination" x-show="!loading && totalCount > 0">
+            <span>
+              Página <span x-text="page + 1"></span> de <span x-text="totalPages"></span>
+              (<span x-text="totalCount"></span> registros)
+            </span>
+            <div class="controls">
+              <button class="btn btn-ghost btn-sm" @click="prevPage()" :disabled="page === 0">Anterior</button>
+              <button class="btn btn-ghost btn-sm" @click="nextPage()" :disabled="page + 1 >= totalPages">Siguiente</button>
+            </div>
+          </div>
+
+          <!-- ===================== DRAWER DE DETALLE / EDICIÓN ===================== -->
+          <template x-if="drawerOpen">
+            <div>
+              <div class="drawer-backdrop" @click="closeDrawer()"></div>
+              <div class="drawer">
+
+                <div class="drawer-header">
+                  <div>
+                    <template x-if="drawerMode === 'create'"><h3>Nuevo recibo</h3></template>
+                    <template x-if="drawerMode !== 'create'">
+                      <h3 x-text="current ? ('Recibo · ' + ubicacion(current)) : 'Cargando…'"></h3>
+                    </template>
+                    <template x-if="drawerMode === 'edit'"><div class="muted">Editando recibo</div></template>
+                  </div>
+                  <button class="drawer-close" @click="closeDrawer()" aria-label="Cerrar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+
+                <div class="drawer-body">
+
+                  <template x-if="formError">
+                    <div class="error-banner" x-text="formError"></div>
+                  </template>
+
+                  <!-- ---------- MODO VISTA ---------- -->
+                  <template x-if="drawerMode === 'view' && current">
+                    <div>
+                      <div class="def-list">
+                        <div class="def-item"><div class="dt">Sector/Nicho</div><div class="dd" x-text="ubicacion(current)"></div></div>
+                        <div class="def-item"><div class="dt">Propietario/Familiar</div><div class="dd" x-text="propietarioLabel(current)"></div></div>
+                        <div class="def-item"><div class="dt">Mutua</div><div class="dd" x-text="current.mutua || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Entidad</div><div class="dd" x-text="current.entidad || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Fecha documento</div><div class="dd" x-text="fmtDate(current.fecha)"></div></div>
+                        <div class="def-item"><div class="dt">Nº documento</div><div class="dd" x-text="current.docnum || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Expediente</div><div class="dd" x-text="current.expediente || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Referencia</div><div class="dd" x-text="current.referencia || '—'"></div></div>
+                        <div class="def-item"><div class="dt">Importe</div><div class="dd" x-text="fmtImporte(current.importe)"></div></div>
+                        <div class="def-item"><div class="dt">Fecha de pago</div><div class="dd" x-text="fmtDate(current.fecha_pago)"></div></div>
+                        <div class="def-item">
+                          <div class="dt">Estado</div>
+                          <div class="dd">
+                            <span class="tag" :class="{
+                              'tag-ocupado': current.estado === 'Anulado',
+                              'tag-vacio': current.estado === 'Pagado',
+                              'tag-reservado': current.estado === 'Pendiente'
+                            }" x-text="current.estado"></span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="def-list full">
+                        <div class="def-item"><div class="dt">Observaciones</div><div class="dd" x-text="current.observaciones || '—'"></div></div>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- ---------- MODO CREAR / EDITAR ---------- -->
+                  <template x-if="drawerMode === 'create' || drawerMode === 'edit'">
+                    <div class="form-grid">
+                      <div class="field">
+                        <label>Sector *</label>
+                        <select x-model="formSectorId" @change="onSectorChangeInForm()">
+                          <option value="">— Elegir sector —</option>
+                          <template x-for="s in sectores" :key="s.id">
+                            <option :value="s.id" :selected="s.id === formSectorId" x-text="s.nombre"></option>
+                          </template>
+                        </select>
+                      </div>
+
+                      <div class="field">
+                        <label>Nicho *</label>
+                        <select x-model="form.nicho_id" :disabled="!formSectorId">
+                          <option value="">— Elegir nicho —</option>
+                          <template x-for="n in nichoOptions" :key="n.id">
+                            <option :value="n.id" :selected="n.id === form.nicho_id" x-text="'Nº ' + n.numero_nicho + (n.estado ? ' · ' + n.estado : '')"></option>
+                          </template>
+                        </select>
+                      </div>
+
+                      <div class="field span-2" style="position:relative;">
+                        <label>Propietario/Familiar (opcional)</label>
+                        <input type="text" placeholder="Busca por nombre, apellidos o DNI…"
+                               x-model="propSearch" @input="onPropSearchInput()">
+                        <div class="autocomplete-results" x-show="propResults.length > 0">
+                          <template x-for="p in propResults" :key="p.id">
+                            <button type="button" @click="pickPropietario(p)" x-text="p.nombre + ' ' + (p.apellidos || '') + (p.dni ? ' (' + p.dni + ')' : '')"></button>
+                          </template>
+                        </div>
+                        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:0.5em;" x-show="propSelected" @click="clearPropietario()">Quitar propietario</button>
+                      </div>
+
+                      <div class="field"><label>Mutua</label><input type="text" x-model="form.mutua"></div>
+                      <div class="field"><label>Entidad</label><input type="text" x-model="form.entidad"></div>
+
+                      <div class="field"><label>Fecha documento</label><input type="date" x-model="form.fecha"></div>
+                      <div class="field"><label>Nº documento</label><input type="text" x-model="form.docnum"></div>
+
+                      <div class="field"><label>Expediente</label><input type="text" x-model="form.expediente"></div>
+                      <div class="field"><label>Referencia</label><input type="text" x-model="form.referencia"></div>
+
+                      <div class="field"><label>Importe (€)</label><input type="number" min="0" step="0.01" x-model="form.importe"></div>
+                      <div class="field"><label>Fecha de pago</label><input type="date" x-model="form.fecha_pago"></div>
+
+                      <div class="field">
+                        <label>Estado</label>
+                        <select x-model="form.estado">
+                          <option value="Pendiente">Pendiente</option>
+                          <option value="Pagado">Pagado</option>
+                          <option value="Anulado">Anulado</option>
+                        </select>
+                      </div>
+
+                      <div class="field span-2"><label>Observaciones</label><textarea x-model="form.observaciones"></textarea></div>
+                    </div>
+                  </template>
+
+                </div>
+
+                <div class="drawer-footer">
+                  <template x-if="drawerMode === 'view'">
+                    <template x-if="canWrite">
+                      <button class="btn btn-danger" @click="deleteCurrent()">Eliminar</button>
+                    </template>
+                  </template>
+                  <div class="spacer"></div>
+                  <template x-if="drawerMode === 'view'">
+                    <button class="btn btn-ghost" @click="closeDrawer()">Cerrar</button>
+                  </template>
+                  <template x-if="drawerMode === 'view' && canWrite">
+                    <button class="btn btn-primary" @click="startEdit()">Editar</button>
+                  </template>
+                  <template x-if="drawerMode === 'create' || drawerMode === 'edit'">
+                    <button class="btn btn-ghost" @click="cancelEdit()">Cancelar</button>
+                  </template>
+                  <template x-if="drawerMode === 'create' || drawerMode === 'edit'">
+                    <button class="btn btn-primary" :disabled="saving" @click="saveForm()">
+                      <span x-show="!saving">Guardar</span>
+                      <span x-show="saving">Guardando…</span>
+                    </button>
+                  </template>
+                </div>
+
+              </div>
+            </div>
+          </template>
+
+        </div>
+      </template>
+
+      <!-- ---------- Usuarios (solo admin) ---------- -->
+      <template x-if="activeSection === 'usuarios'">
+        <div x-data="usuariosSection()" x-init="init()">
+
+          <template x-if="!isAdmin">
+            <div class="panel placeholder-panel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/>
+              </svg>
+              <h3>Acceso restringido</h3>
+              <p>Esta sección es solo para administradores.</p>
+            </div>
+          </template>
+
+          <template x-if="isAdmin">
+            <div>
+              <div class="panel" style="margin-bottom:1.4em;">
+                <p style="margin:0; color:var(--color-ink-soft); font-size:0.9rem;">
+                  Los usuarios nuevos se dan de alta desde el panel de Supabase
+                  (<strong>Authentication → Users → Add user</strong>). En cuanto
+                  se crean, aparecen aquí automáticamente con rol <strong>Consulta</strong>
+                  por defecto, listos para que les asignes el rol correcto.
+                </p>
+              </div>
+
+              <div class="toolbar">
+                <input class="search-input" type="text" placeholder="Buscar por correo o nombre…" x-model="search">
+              </div>
+
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Correo</th>
+                    <th>Nombre</th>
+                    <th>Rol</th>
+                    <th>Alta</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-if="loading">
+                    <tr><td colspan="4" class="table-empty">Cargando…</td></tr>
+                  </template>
+                  <template x-if="!loading && filteredRows.length === 0">
+                    <tr><td colspan="4" class="table-empty">No se han encontrado usuarios.</td></tr>
+                  </template>
+                  <template x-if="!loading">
+                    <template x-for="row in filteredRows" :key="row.id">
+                      <tr @click="openEdit(row)">
+                        <td x-text="row.email"></td>
+                        <td x-text="row.nombre || '—'"></td>
+                        <td>
+                          <span class="tag" :class="{
+                            'tag-ocupado': row.role === 'admin',
+                            'tag-reservado': row.role === 'avanzado',
+                            'tag-vacio': row.role === 'consulta'
+                          }" x-text="roleLabel(row.role)"></span>
+                          <span class="muted" x-show="row.id === myId" style="font-size:0.78rem;"> (tú)</span>
+                        </td>
+                        <td x-text="fmtDate(row.created_at)"></td>
+                      </tr>
+                    </template>
+                  </template>
+                </tbody>
+              </table>
+
+              <!-- ===================== DRAWER DE EDICIÓN ===================== -->
+              <template x-if="drawerOpen">
+                <div>
+                  <div class="drawer-backdrop" @click="closeDrawer()"></div>
+                  <div class="drawer">
+
+                    <div class="drawer-header">
+                      <div>
+                        <h3 x-text="current?.email"></h3>
+                        <div class="muted">Editando usuario</div>
+                      </div>
+                      <button class="drawer-close" @click="closeDrawer()" aria-label="Cerrar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+
+                    <div class="drawer-body">
+                      <template x-if="formError">
+                        <div class="error-banner" x-text="formError"></div>
+                      </template>
+
+                      <div class="field"><label>Nombre</label><input type="text" x-model="form.nombre" placeholder="(sin especificar)"></div>
+
+                      <div class="field">
+                        <label>Rol</label>
+                        <select x-model="form.role">
+                          <option value="consulta">Consulta — solo lectura</option>
+                          <option value="avanzado">Avanzado — edita todo salvo usuarios y alta/baja de sectores</option>
+                          <option value="admin">Administrador — acceso total</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="drawer-footer">
+                      <div class="spacer"></div>
+                      <button class="btn btn-ghost" @click="closeDrawer()">Cancelar</button>
+                      <button class="btn btn-primary" :disabled="saving" @click="saveForm()">
+                        <span x-show="!saving">Guardar</span>
+                        <span x-show="saving">Guardando…</span>
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
+              </template>
+
+            </div>
+          </template>
+
+        </div>
+      </template>
+
       <!-- ---------- Secciones aún no construidas ---------- -->
-      <template x-if="activeSection !== 'dashboard' && activeSection !== 'difuntos' && activeSection !== 'sectores' && activeSection !== 'propietarios'">
+      <template x-if="activeSection !== 'dashboard' && activeSection !== 'difuntos' && activeSection !== 'sectores' && activeSection !== 'propietarios' && activeSection !== 'recibos' && activeSection !== 'usuarios'">
         <div class="panel placeholder-panel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9z"/>

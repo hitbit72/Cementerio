@@ -74,7 +74,7 @@ function propietariosSection() {
       this.searchDebounceId = setTimeout(() => {
         this.page = 0;
         this.fetchRows();
-      }, 450);
+      }, 350);
     },
 
     async fetchRows() {
@@ -113,6 +113,12 @@ function propietariosSection() {
     },
     prevPage() {
       if (this.page > 0) { this.page--; this.fetchRows(); }
+    },
+
+    fmtDate(value) {
+      if (!value) return '—';
+      const [y, m, d] = value.split('-');
+      return `${d}/${m}/${y}`;
     },
 
     // ---------- Abrir panel ----------
@@ -243,7 +249,7 @@ function propietariosSection() {
       this.difuntosLoading = true;
       const { data, error } = await sb
         .from('relacion')
-        .select('id, relacion, observaciones, difunto:difunto_id(id, nombre, apellidos, num_registro)')
+        .select('id, relacion, observaciones, difunto:difunto_id(id, nombre, apellidos, num_registro, ffallecido, edad)')
         .eq('familiar_id', propietarioId);
       this.difuntosLoading = false;
       if (error) { console.error(error); this.difuntos = []; return; }

@@ -62,7 +62,7 @@ function difuntosSection() {
       this.searchDebounceId = setTimeout(() => {
         this.page = 0;
         this.fetchRows();
-      }, 450);
+      }, 350);
     },
 
     onSectorFilterChange() {
