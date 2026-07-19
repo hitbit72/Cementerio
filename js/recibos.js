@@ -4,8 +4,6 @@
    Sector y Nicho son obligatorios; el Propietario/Familiar es opcional.
    ===================================================================== */
 
-const RECIBO_PAGE_SIZE = 25;
-
 function recibosSection() {
   return {
     // ---------- Listado ----------
@@ -40,7 +38,7 @@ function recibosSection() {
     },
 
     get totalPages() {
-      return Math.max(1, Math.ceil(this.totalCount / RECIBO_PAGE_SIZE));
+      return Math.max(1, Math.ceil(this.totalCount / PAGE_SIZE));
     },
 
     async init() {
@@ -86,8 +84,8 @@ function recibosSection() {
           query = query.or(`expediente.ilike.%${q}%,docnum.ilike.%${q}%,referencia.ilike.%${q}%,entidad.ilike.%${q}%,mutua.ilike.%${q}%`);
         }
 
-        const from = this.page * RECIBO_PAGE_SIZE;
-        const to = from + RECIBO_PAGE_SIZE - 1;
+        const from = this.page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
 
         const { data, count, error } = await query
           .order('fecha', { ascending: false })

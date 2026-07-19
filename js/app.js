@@ -2,6 +2,8 @@
    APP SHELL — sesión, navegación por rol y datos del dashboard
    ===================================================================== */
 
+const PAGE_SIZE = 20;
+
 function appShell() {
   return {
     // Estado

@@ -277,6 +277,13 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   margin-top: 0.6em;
 }
 
+.programer {
+  position: relative;
+  margin-top: auto;
+  text-align: center;
+  font-size: 0.6rem;
+}
+
 .user-chip { display: flex; align-items: center; gap: 0.6em; padding: 0.3em 0.3em 0.7em; }
 
 .user-avatar {
