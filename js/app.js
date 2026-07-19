@@ -30,7 +30,7 @@ function appShell() {
         items: [
           { key: 'sectores', label: 'Sectores y nichos', icon: 'map' },
           { key: 'difuntos', label: 'Difuntos', icon: 'record' },
-          { key: 'propietarios', label: 'Propietarios', icon: 'users' },
+          { key: 'propietarios', label: 'Familiares', icon: 'users' },
           { key: 'recibos', label: 'Recibos', icon: 'receipt' },
         ],
       },

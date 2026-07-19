@@ -465,7 +465,7 @@
                                           'cell-clickable': cell.nicho && canWrite
                                         }"
                                         :title="'Nº ' + cell.numero + (cell.nicho ? (' · ' + (cell.estado || 'Sin estado')) : ' · sin crear')"
-                                        @click="cell.nicho && canWrite && openNichoEdit(cell.nicho)"
+                                        @click="cell.nicho && canWrite && openNichoEdit(cell.nicho); $nextTick(() => $refs.numNicho.focus())"
                                         x-text="cell.numero">
                                     </td>
                                   </template>
@@ -497,7 +497,9 @@
                             <span x-show="!generating">Generar automáticamente</span>
                             <span x-show="generating">Generando…</span>
                           </button>
-                          <button class="btn btn-primary btn-sm" @click="openNichoCreate()">+ Nicho</button>
+                          <template x-if="current.filas * current.columnas != nichosForCurrent.length">
+                            <button class="btn btn-primary btn-sm" @click="openNichoCreate()">+ Nicho</button>
+                          </template>
                         </div>
                       </div>
 
@@ -519,7 +521,7 @@
                           </template>
 
                           <div class="form-grid">
-                            <div class="field"><label>Número de nicho *</label><input type="number" min="1" x-model="nichoForm.numero_nicho"></div>
+                            <div class="field"><label>Número de nicho *</label><input x-ref="numNicho" type="number" min="1" x-model="nichoForm.numero_nicho"></div>
 
                             <template x-if="nichoFormOcupado">
                               <div class="field">
@@ -585,7 +587,7 @@
                               </template>
                             </div>
                             <div style="display:flex; gap:0.4em;" x-show="canWrite">
-                              <button class="btn btn-ghost btn-sm" @click="openNichoEdit(n)">Editar</button>
+                              <button class="btn btn-ghost btn-sm" @click="openNichoEdit(n); $nextTick(() => $refs.numNicho.focus())">Editar</button>
                               <button class="btn btn-danger btn-sm" @click="deleteNicho(n)">Eliminar</button>
                             </div>
                           </div>
