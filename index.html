@@ -484,7 +484,7 @@
                       <template x-if="!dispositionGrid">
                         <!-- <p class="muted">Define filas y columnas en el sector para ver aquí su disposición visual.</p> -->
                         <h4 class="subsection-title">Disposición</h4>
-                        <img scr="img/sector/t1.png">
+                        <img x-bind:src="`./img/sector/${current.plano_img}`">
                       </template>
 
                       <hr class="section-divider">
