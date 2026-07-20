@@ -1,4 +1,4 @@
-# Registro del Cementerio — Ayuntamientos
+# Registro del Cementerio — Ayuntamiento
 
 Aplicación web de gestión municipal para el cementerio de Jimena: registro de
 difuntos, nichos y sectores, propietarios/familiares y recibos de pago.
@@ -149,8 +149,32 @@ en cuanto se crean aparecen aquí automáticamente listas para asignarles rol.
 
 ## Puesta en marcha
 
-Edita `js/config.js` con la URL y la `anon key` de tu proyecto Supabase
-(Project Settings → API de tu panel de Supabase). El proyecto no necesita
-`npm install` ni ningún paso de compilación: basta con servir la carpeta con
-cualquier hosting estático (Netlify, Vercel, GitHub Pages) o abrir
-`login.html` directamente en el navegador para probarlo en local.
+### Desarrollo local
+
+Copia `js/config.example.js` como `js/config.js` y rellena los dos valores
+con los de tu proyecto Supabase (Project Settings → API). Este archivo real
+está en `.gitignore`, así que nunca se sube al repositorio.
+
+El proyecto no necesita `npm install` ni ningún paso de compilación para
+probarlo en local: basta con abrir `login.html` directamente en el
+navegador, o servir la carpeta con cualquier servidor estático simple
+(`npx serve .`).
+
+### Despliegue en Vercel con variables de entorno
+
+Si tu proyecto está conectado a Vercel mediante su integración con GitHub,
+**ten en cuenta que Vercel no lee las "Repository variables" de GitHub
+Actions** — son dos sistemas independientes. Las variables de entorno de
+Vercel se configuran aparte, en su propio panel.
+
+1. En Vercel → tu proyecto → **Settings → Environment Variables**, añade:
+   - `SBASE_URL` → la Project URL de Supabase
+   - `SBASE_ANON_KEY` → la anon/public key de Supabase
+2. El repositorio ya incluye `vercel.json` y `scripts/generate-config.js`:
+   en cada despliegue, Vercel ejecuta ese script como *Build Command*, que
+   genera `js/config.js` a partir de esas dos variables de entorno. No hace
+   falta ningún framework ni build tradicional — es un script Node sin
+   dependencias.
+3. Si algún día cambias de Supabase (por ejemplo, pasas de un proyecto de
+   pruebas a uno de producción), solo tienes que actualizar esas dos
+   variables en Vercel y volver a desplegar — no hace falta tocar código.

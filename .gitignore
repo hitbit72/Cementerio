@@ -1,3 +1,8 @@
+# Contiene las claves reales de Supabase para desarrollo local.
+# En Vercel, este archivo se genera solo en cada despliegue
+# (ver scripts/generate-config.js y vercel.json).
+# La plantilla sin claves reales es js/config.example.js.
+js/config.js
 *.db
 *.zip
 .venv
