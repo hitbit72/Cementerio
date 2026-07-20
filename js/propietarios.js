@@ -5,6 +5,8 @@
    de lo que ya hace difuntos.js).
    ===================================================================== */
 
+const PROPIETARIO_PAGE_SIZE = 25;
+
 function propietariosSection() {
   return {
     // ---------- Listado ----------
@@ -25,6 +27,10 @@ function propietariosSection() {
     formError: '',
     current: null,
     form: {},
+    poblacionInput: '',
+    poblacionDropdownOpen: false,
+    provinciaInput: '',
+    provinciaDropdownOpen: false,
 
     // ---------- Difuntos asociados ----------
     difuntos: [],
@@ -41,7 +47,29 @@ function propietariosSection() {
     },
 
     get totalPages() {
-      return Math.max(1, Math.ceil(this.totalCount / PAGE_SIZE));
+      return Math.max(1, Math.ceil(this.totalCount / PROPIETARIO_PAGE_SIZE));
+    },
+
+    get poblacionMatches() {
+      const q = this.poblacionInput.trim().toLowerCase();
+      if (!q) return [];
+      return this.poblaciones.filter(p => p.nombre.toLowerCase().includes(q)).slice(0, 8);
+    },
+    get poblacionEsNueva() {
+      const q = this.poblacionInput.trim().toLowerCase();
+      if (!q) return false;
+      return !this.poblaciones.some(p => p.nombre.toLowerCase() === q);
+    },
+
+    get provinciaMatches() {
+      const q = this.provinciaInput.trim().toLowerCase();
+      if (!q) return [];
+      return this.provincias.filter(p => p.nombre.toLowerCase().includes(q)).slice(0, 8);
+    },
+    get provinciaEsNueva() {
+      const q = this.provinciaInput.trim().toLowerCase();
+      if (!q) return false;
+      return !this.provincias.some(p => p.nombre.toLowerCase() === q);
     },
 
     async init() {
@@ -87,8 +115,8 @@ function propietariosSection() {
           query = query.or(`nombre.ilike.%${q}%,apellidos.ilike.%${q}%,mote.ilike.%${q}%,dni.ilike.%${q}%,telefono.ilike.%${q}%`);
         }
 
-        const from = this.page * PAGE_SIZE;
-        const to = from + PAGE_SIZE - 1;
+        const from = this.page * PROPIETARIO_PAGE_SIZE;
+        const to = from + PROPIETARIO_PAGE_SIZE - 1;
 
         const { data, count, error } = await query
           .order('apellidos', { ascending: true })
@@ -118,7 +146,6 @@ function propietariosSection() {
       const [y, m, d] = value.split('-');
       return `${d}/${m}/${y}`;
     },
-
     // ---------- Abrir panel ----------
 
     openCreate() {
@@ -126,8 +153,12 @@ function propietariosSection() {
       this.current = null;
       this.form = {
         nombre: '', apellidos: '', mote: '', dni: '', telefono: '',
-        direccion: '', poblacion_id: '', provincia_id: '', cp: '', email: '', observaciones: '',
+        direccion: '', cp: '', email: '', observaciones: '',
       };
+      this.poblacionInput = '';
+      this.provinciaInput = '';
+      this.poblacionDropdownOpen = false;
+      this.provinciaDropdownOpen = false;
       this.difuntos = [];
       this.formError = '';
       this.drawerOpen = true;
@@ -160,9 +191,12 @@ function propietariosSection() {
         id: p.id,
         nombre: p.nombre || '', apellidos: p.apellidos || '', mote: p.mote || '',
         dni: p.dni || '', telefono: p.telefono || '', direccion: p.direccion || '',
-        poblacion_id: p.poblacion_id || '', provincia_id: p.provincia_id || '',
         cp: p.cp || '', email: p.email || '', observaciones: p.observaciones || '',
       };
+      this.poblacionInput = p.poblacion?.nombre || '';
+      this.provinciaInput = p.provincia?.nombre || '';
+      this.poblacionDropdownOpen = false;
+      this.provinciaDropdownOpen = false;
       this.drawerMode = 'edit';
       this.formError = '';
     },
@@ -176,6 +210,24 @@ function propietariosSection() {
       this.drawerOpen = false;
       this.current = null;
       this.difuntos = [];
+    },
+
+    // ---------- Autocompletado de Población/Provincia (buscar existente o crear nueva) ----------
+
+    onPoblacionInput() {
+      this.poblacionDropdownOpen = true;
+    },
+    pickPoblacion(p) {
+      this.poblacionInput = p.nombre;
+      this.poblacionDropdownOpen = false;
+    },
+
+    onProvinciaInput() {
+      this.provinciaDropdownOpen = true;
+    },
+    pickProvincia(p) {
+      this.provinciaInput = p.nombre;
+      this.provinciaDropdownOpen = false;
     },
 
     // ---------- Guardar / borrar ----------
@@ -194,8 +246,6 @@ function propietariosSection() {
         dni: this.form.dni || null,
         telefono: this.form.telefono || null,
         direccion: this.form.direccion || null,
-        poblacion_id: this.form.poblacion_id || null,
-        provincia_id: this.form.provincia_id || null,
         cp: this.form.cp || null,
         email: this.form.email || null,
         observaciones: this.form.observaciones || null,
@@ -203,6 +253,9 @@ function propietariosSection() {
 
       this.saving = true;
       try {
+        payload.poblacion_id = await resolveCatalogId('poblacion', this.poblaciones, this.poblacionInput);
+        payload.provincia_id = await resolveCatalogId('provincia', this.provincias, this.provinciaInput);
+
         if (this.drawerMode === 'create') {
           const { error } = await sb.from('propietario').insert(payload);
           if (error) throw error;

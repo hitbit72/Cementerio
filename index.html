@@ -8,6 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 <script src="js/config.js"></script>
+<script src="js/catalogos.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/app.js"></script>
 <script src="js/difuntos.js"></script>
@@ -286,6 +287,7 @@
                           </button>
                         </div>
                       </template>
+                      <hr class="miniform-divider">
                     </div>
                   </template>
 
@@ -304,14 +306,18 @@
                       <div class="field span-2"><label>Causa</label><input type="text" x-model="form.causa"></div>
                       <div class="field"><label>Dirección</label><input type="text" x-model="form.direccion"></div>
 
-                      <div class="field">
+                      <div class="field" style="position:relative;" @click.outside="poblacionDropdownOpen = false">
                         <label>Población</label>
-                        <select x-model="form.poblacion_id">
-                          <option value="">— Sin especificar —</option>
-                          <template x-for="p in poblaciones" :key="p.id">
-                            <option :value="p.id" :selected="p.id === form.poblacion_id" x-text="p.nombre"></option>
+                        <input type="text" placeholder="Escribe para buscar…"
+                               x-model="poblacionInput" @input="onPoblacionInput()" @focus="onPoblacionInput()">
+                        <div class="autocomplete-results" style="left:0; right:0;" x-show="poblacionDropdownOpen && poblacionMatches.length > 0">
+                          <template x-for="p in poblacionMatches" :key="p.id">
+                            <button type="button" @click="pickPoblacion(p)" x-text="p.nombre"></button>
                           </template>
-                        </select>
+                        </div>
+                        <div class="muted" style="font-size:0.78rem; margin-top:0.35em;" x-show="poblacionEsNueva">
+                          Se creará como población nueva: "<span x-text="poblacionInput.trim()"></span>"
+                        </div>
                       </div>
 
                       <div class="field">
@@ -512,6 +518,7 @@
 
                       <!-- ---------- Mini formulario nicho (arriba del listado) ---------- -->
                       <template x-if="nichoFormOpen">
+                      <div>
                         <div class="add-familiar-box">
                           <template x-if="nichoFormError">
                             <div class="error-banner" x-text="nichoFormError"></div>
@@ -559,6 +566,8 @@
                             </button>
                           </div>
                         </div>
+                        <hr class="miniform-divider">
+                      </div>
                       </template>
 
                       <template x-if="nichosDetalleLoading">
@@ -821,24 +830,32 @@
 
                       <div class="field span-2"><label>Dirección</label><input type="text" x-model="form.direccion"></div>
 
-                      <div class="field">
+                      <div class="field" style="position:relative;" @click.outside="poblacionDropdownOpen = false">
                         <label>Población</label>
-                        <select x-model="form.poblacion_id">
-                          <option value="">— Sin especificar —</option>
-                          <template x-for="p in poblaciones" :key="p.id">
-                            <option :value="p.id" :selected="p.id === form.poblacion_id" x-text="p.nombre"></option>
+                        <input type="text" placeholder="Escribe para buscar…"
+                               x-model="poblacionInput" @input="onPoblacionInput()" @focus="onPoblacionInput()">
+                        <div class="autocomplete-results" style="left:0; right:0;" x-show="poblacionDropdownOpen && poblacionMatches.length > 0">
+                          <template x-for="p in poblacionMatches" :key="p.id">
+                            <button type="button" @click="pickPoblacion(p)" x-text="p.nombre"></button>
                           </template>
-                        </select>
+                        </div>
+                        <div class="muted" style="font-size:0.78rem; margin-top:0.35em;" x-show="poblacionEsNueva">
+                          Se creará como población nueva: "<span x-text="poblacionInput.trim()"></span>"
+                        </div>
                       </div>
 
-                      <div class="field">
+                      <div class="field" style="position:relative;" @click.outside="provinciaDropdownOpen = false">
                         <label>Provincia</label>
-                        <select x-model="form.provincia_id">
-                          <option value="">— Sin especificar —</option>
-                          <template x-for="pr in provincias" :key="pr.id">
-                            <option :value="pr.id" :selected="pr.id === form.provincia_id" x-text="pr.nombre"></option>
+                        <input type="text" placeholder="Escribe para buscar…"
+                               x-model="provinciaInput" @input="onProvinciaInput()" @focus="onProvinciaInput()">
+                        <div class="autocomplete-results" style="left:0; right:0;" x-show="provinciaDropdownOpen && provinciaMatches.length > 0">
+                          <template x-for="p in provinciaMatches" :key="p.id">
+                            <button type="button" @click="pickProvincia(p)" x-text="p.nombre"></button>
                           </template>
-                        </select>
+                        </div>
+                        <div class="muted" style="font-size:0.78rem; margin-top:0.35em;" x-show="provinciaEsNueva">
+                          Se creará como provincia nueva: "<span x-text="provinciaInput.trim()"></span>"
+                        </div>
                       </div>
 
                       <div class="field"><label>CP</label><input type="text" x-model="form.cp"></div>
@@ -1012,6 +1029,7 @@
                       <div class="def-list full">
                         <div class="def-item"><div class="dt">Observaciones</div><div class="dd" x-text="current.observaciones || '—'"></div></div>
                       </div>
+                      <hr class="miniform-divider">
                     </div>
                   </template>
 

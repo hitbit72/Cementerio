@@ -4,6 +4,8 @@
    y gestión de familiares (tabla `relacion`).
    ===================================================================== */
 
+const DIFUNTO_PAGE_SIZE = 25;
+
 function difuntosSection() {
   return {
     // ---------- Listado ----------
@@ -26,6 +28,8 @@ function difuntosSection() {
     form: {},            // datos editables
     formSectorId: '',     // sector elegido en el formulario (para filtrar nichos)
     nichoOptions: [],
+    poblacionInput: '',        // texto libre del autocompletado de Población
+    poblacionDropdownOpen: false,
 
     // ---------- Familiares ----------
     familiares: [],
@@ -42,7 +46,21 @@ function difuntosSection() {
     },
 
     get totalPages() {
-      return Math.max(1, Math.ceil(this.totalCount / PAGE_SIZE));
+      return Math.max(1, Math.ceil(this.totalCount / DIFUNTO_PAGE_SIZE));
+    },
+
+    get poblacionMatches() {
+      const q = this.poblacionInput.trim().toLowerCase();
+      if (!q) return [];
+      return this.poblaciones
+        .filter(p => p.nombre.toLowerCase().includes(q))
+        .slice(0, 8);
+    },
+
+    get poblacionEsNueva() {
+      const q = this.poblacionInput.trim().toLowerCase();
+      if (!q) return false;
+      return !this.poblaciones.some(p => p.nombre.toLowerCase() === q);
     },
 
     async init() {
@@ -89,8 +107,8 @@ function difuntosSection() {
           query = query.or(`nombre.ilike.%${q}%,apellidos.ilike.%${q}%,num_registro.ilike.%${q}%`);
         }
 
-        const from = this.page * PAGE_SIZE;
-        const to = from + PAGE_SIZE - 1;
+        const from = this.page * DIFUNTO_PAGE_SIZE;
+        const to = from + DIFUNTO_PAGE_SIZE - 1;
 
         const { data, count, error } = await query
           .order('apellidos', { ascending: true })
@@ -134,8 +152,10 @@ function difuntosSection() {
       this.current = null;
       this.form = {
         num_registro: '', nombre: '', apellidos: '', fnacido: '', ffallecido: '', edad: '',
-        causa: '', direccion: '', poblacion_id: '', nicho_id: '', observaciones: '',
+        causa: '', direccion: '', nicho_id: '', observaciones: '',
       };
+      this.poblacionInput = '';
+      this.poblacionDropdownOpen = false;
       this.formSectorId = '';
       this.nichoOptions = [];
       this.familiares = [];
@@ -176,10 +196,11 @@ function difuntosSection() {
         edad: d.edad || '',
         causa: d.causa || '',
         direccion: d.direccion || '',
-        poblacion_id: d.poblacion_id || '',
         nicho_id: d.nicho_id || '',
         observaciones: d.observaciones || '',
       };
+      this.poblacionInput = d.poblacion?.nombre || '';
+      this.poblacionDropdownOpen = false;
       this.formSectorId = d.nichos?.sector_id || '';
       if (this.formSectorId) this.loadNichoOptions(this.formSectorId, d.nicho_id);
       this.drawerMode = 'edit';
@@ -217,6 +238,17 @@ function difuntosSection() {
       if (keepSelectedId) this.form.nicho_id = keepSelectedId;
     },
 
+    // ---------- Autocompletado de Población (buscar existente o crear nueva) ----------
+
+    onPoblacionInput() {
+      this.poblacionDropdownOpen = true;
+    },
+
+    pickPoblacion(p) {
+      this.poblacionInput = p.nombre;
+      this.poblacionDropdownOpen = false;
+    },
+
     // ---------- Guardar / borrar ----------
 
     async saveForm() {
@@ -235,13 +267,14 @@ function difuntosSection() {
         edad: (this.form.edad === '' || this.form.edad === null || isNaN(parseInt(this.form.edad, 10))) ? null : parseInt(this.form.edad, 10),
         causa: this.form.causa || null,
         direccion: this.form.direccion || null,
-        poblacion_id: this.form.poblacion_id || null,
         nicho_id: this.form.nicho_id || null,
         observaciones: this.form.observaciones || null,
       };
 
       this.saving = true;
       try {
+        payload.poblacion_id = await resolveCatalogId('poblacion', this.poblaciones, this.poblacionInput);
+
         if (this.drawerMode === 'create') {
           const { error } = await sb.from('difunto').insert(payload);
           if (error) throw error;

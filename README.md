@@ -1,4 +1,4 @@
-# Registro del Cementerio — Ayuntamiento
+# Registro del Cementerio — Ayuntamientos
 
 Aplicación web de gestión municipal para el cementerio de Jimena: registro de
 difuntos, nichos y sectores, propietarios/familiares y recibos de pago.
@@ -60,6 +60,7 @@ con las herramientas de desarrollador del navegador).
 │   └── styles.css       Sistema de diseño compartido por toda la app
 └── js/
     ├── config.js         Claves de conexión a Supabase
+    ├── catalogos.js      Ayudante "buscar o crear" para Población/Provincia
     ├── auth.js           Helpers de sesión, perfil de usuario y logout
     ├── app.js             Menú lateral, navegación y panel principal
     ├── difuntos.js        Lógica de la sección Difuntos
