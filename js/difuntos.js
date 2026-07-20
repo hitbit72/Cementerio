@@ -4,8 +4,6 @@
    y gestión de familiares (tabla `relacion`).
    ===================================================================== */
 
-const DIFUNTO_PAGE_SIZE = 25;
-
 function difuntosSection() {
   return {
     // ---------- Listado ----------
@@ -46,7 +44,7 @@ function difuntosSection() {
     },
 
     get totalPages() {
-      return Math.max(1, Math.ceil(this.totalCount / DIFUNTO_PAGE_SIZE));
+      return Math.max(1, Math.ceil(this.totalCount / PAGE_SIZE));
     },
 
     get poblacionMatches() {
@@ -107,8 +105,8 @@ function difuntosSection() {
           query = query.or(`nombre.ilike.%${q}%,apellidos.ilike.%${q}%,num_registro.ilike.%${q}%`);
         }
 
-        const from = this.page * DIFUNTO_PAGE_SIZE;
-        const to = from + DIFUNTO_PAGE_SIZE - 1;
+        const from = this.page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
 
         const { data, count, error } = await query
           .order('apellidos', { ascending: true })

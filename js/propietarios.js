@@ -5,8 +5,6 @@
    de lo que ya hace difuntos.js).
    ===================================================================== */
 
-const PROPIETARIO_PAGE_SIZE = 25;
-
 function propietariosSection() {
   return {
     // ---------- Listado ----------
@@ -47,7 +45,7 @@ function propietariosSection() {
     },
 
     get totalPages() {
-      return Math.max(1, Math.ceil(this.totalCount / PROPIETARIO_PAGE_SIZE));
+      return Math.max(1, Math.ceil(this.totalCount / PAGE_SIZE));
     },
 
     get poblacionMatches() {
@@ -115,8 +113,8 @@ function propietariosSection() {
           query = query.or(`nombre.ilike.%${q}%,apellidos.ilike.%${q}%,mote.ilike.%${q}%,dni.ilike.%${q}%,telefono.ilike.%${q}%`);
         }
 
-        const from = this.page * PROPIETARIO_PAGE_SIZE;
-        const to = from + PROPIETARIO_PAGE_SIZE - 1;
+        const from = this.page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
 
         const { data, count, error } = await query
           .order('apellidos', { ascending: true })
