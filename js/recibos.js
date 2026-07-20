@@ -52,7 +52,7 @@ function recibosSection() {
       this.searchDebounceId = setTimeout(() => {
         this.page = 0;
         this.fetchRows();
-      }, 350);
+      }, SEARCH_TIME);
     },
 
     onFilterChange() {
@@ -63,17 +63,10 @@ function recibosSection() {
     async fetchRows() {
       this.loading = true;
       try {
-        let query = sb
-          .from('recibos')
-          .select(
-            this.sectorFiltro
-              ? '*, nichos!inner(numero_nicho, sector_id, sector:sector_id(nombre)), propietario:propietario_id(nombre, apellidos, dni)'
-              : '*, nichos(numero_nicho, sector_id, sector:sector_id(nombre)), propietario:propietario_id(nombre, apellidos, dni)',
-            { count: 'exact' }
-          );
+        let query = sb.from('v_recibos_resumen').select('*', { count: 'exact' });
 
         if (this.sectorFiltro) {
-          query = query.eq('nichos.sector_id', this.sectorFiltro);
+          query = query.eq('sector_id', this.sectorFiltro);
         }
         if (this.estadoFiltro) {
           query = query.eq('estado', this.estadoFiltro);
@@ -81,7 +74,11 @@ function recibosSection() {
 
         const q = this.search.trim();
         if (q) {
-          query = query.or(`expediente.ilike.%${q}%,docnum.ilike.%${q}%,referencia.ilike.%${q}%,entidad.ilike.%${q}%,mutua.ilike.%${q}%`);
+          query = query.or(
+            `expediente.ilike.%${q}%,docnum.ilike.%${q}%,referencia.ilike.%${q}%,` +
+            `entidad.ilike.%${q}%,mutua.ilike.%${q}%,nombre_p.ilike.%${q}%,` +
+            `apellido_p.ilike.%${q}%,mote_p.ilike.%${q}%,dni_p.ilike.%${q}%,sector.ilike.%${q}%`
+          );
         }
 
         const from = this.page * PAGE_SIZE;
@@ -110,16 +107,14 @@ function recibosSection() {
     },
 
     ubicacion(row) {
-      if (!row.nichos) return '—';
-      const sectorNombre = row.nichos.sector?.nombre || '';
-      return `${sectorNombre} Nº${row.nichos.numero_nicho}`;
+      if (!row.nicho) return '—';
+      return `${row.sector || ''} Nº${row.nicho}`;
     },
 
     propietarioLabel(row) {
-      const p = row.propietario;
-      if (!p) return '—';
-      const nombreCompleto = `${p.nombre} ${p.apellidos || ''}`.trim();
-      return p.dni ? `${nombreCompleto} (${p.dni})` : nombreCompleto;
+      if (!row.nombre_p) return '—';
+      const nombreCompleto = `${row.nombre_p} ${row.apellido_p || ''}`.trim();
+      return row.dni_p ? `${nombreCompleto} (${row.dni_p})` : nombreCompleto;
     },
 
     fmtDate(value) {
@@ -152,24 +147,11 @@ function recibosSection() {
       this.drawerOpen = true;
     },
 
-    async openDetail(row) {
+    openDetail(row) {
       this.drawerMode = 'view';
       this.formError = '';
+      this.current = row;
       this.drawerOpen = true;
-      this.current = null;
-
-      const { data, error } = await sb
-        .from('recibos')
-        .select('*, nichos(id, numero_nicho, sector_id, sector:sector_id(nombre)), propietario:propietario_id(id, nombre, apellidos, dni, telefono)')
-        .eq('id', row.id)
-        .single();
-
-      if (error) {
-        console.error('Error cargando el recibo:', error);
-        this.formError = 'No se ha podido cargar el recibo.';
-        return;
-      }
-      this.current = data;
     },
 
     async startEdit() {
@@ -189,12 +171,12 @@ function recibosSection() {
         estado: r.estado || 'Pendiente',
         observaciones: r.observaciones || '',
       };
-      this.formSectorId = r.nichos?.sector_id || '';
+      this.formSectorId = r.sector_id || '';
       if (this.formSectorId) await this.loadNichoOptions(this.formSectorId, r.nicho_id);
 
-      if (r.propietario) {
-        this.propSelected = r.propietario;
-        this.propSearch = `${r.propietario.nombre} ${r.propietario.apellidos || ''}`.trim();
+      if (r.propietario_id) {
+        this.propSelected = { id: r.propietario_id, nombre: r.nombre_p, apellidos: r.apellido_p, dni: r.dni_p };
+        this.propSearch = `${r.nombre_p} ${r.apellido_p || ''}`.trim() + (r.dni_p ? ` (${r.dni_p})` : '');
       } else {
         this.propSelected = null;
         this.propSearch = '';

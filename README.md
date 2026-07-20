@@ -136,9 +136,12 @@ datos de contacto y, en espejo con la sección Difuntos, la lista de
 ### Recibos
 Listado de recibos con su ubicación (sector/nicho), el propietario asociado
 (con su DNI si lo tiene), mutua, fecha y número de documento, importe,
-estado (pagado/pendiente/anulado) y observaciones. Al crear o editar un
-recibo, el **sector y el nicho son obligatorios**; el propietario/familiar
-es opcional.
+estado (pagado/pendiente/anulado) y observaciones. Igual que Sectores, este
+listado se lee de una vista de Postgres (`v_recibos_resumen`) que ya trae
+aplanados los datos del propietario y el sector — así se puede buscar y
+filtrar por nombre, apellidos, apodo o DNI del propietario, o por sector,
+en una sola consulta. Al crear o editar un recibo, el **sector y el nicho
+son obligatorios**; el propietario/familiar es opcional.
 
 ### Usuarios (solo `admin`)
 Listado de todas las personas con acceso a la app, con su rol actual.

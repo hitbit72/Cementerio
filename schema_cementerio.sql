@@ -1,5 +1,5 @@
 -- =====================================================================
--- ESQUEMA: Gestión Cementerio
+-- ESQUEMA: Gestión Cementerio (Jimena)
 -- Motor: PostgreSQL / Supabase
 -- =====================================================================
 -- Cómo usarlo:
@@ -412,6 +412,47 @@ order by s.nombre;
 
 grant select on public.v_sector_resumen to authenticated;
 
+-- =====================================================================
+-- 13. VISTA DE RECIBOS CON PROPIETARIO/NICHO/SECTOR APLANADOS
+--     Permite a la app buscar y filtrar en una sola consulta por nombre,
+--     apellidos, apodo o DNI del propietario, y por el nombre/id del
+--     sector — datos que viven en tablas relacionadas y no serían
+--     buscables directamente sobre `recibos`.
+-- =====================================================================
+
+create or replace view public.v_recibos_resumen
+with (security_invoker = true)
+as
+select
+    r.id,
+    r.fecha,
+    r.expediente,
+    r.docnum,
+    r.mutua,
+    r.referencia,
+    r.entidad,
+    r.importe,
+    r.fecha_pago,
+    r.estado,
+    r.nicho_id,
+    r.propietario_id,
+    r.observaciones,
+    p.nombre      as nombre_p,
+    p.apellidos   as apellido_p,
+    p.mote        as mote_p,
+    p.dni         as dni_p,
+    n.numero_nicho as nicho,
+    s.id          as sector_id,
+    s.nombre      as sector
+from public.recibos r
+left join public.propietario p
+    on p.id = r.propietario_id
+left join public.nichos n
+    on n.id = r.nicho_id
+left join public.sector s
+    on s.id = n.sector_id;
+
+grant select on public.v_recibos_resumen to authenticated;
 
 -- =====================================================================
 -- FIN DEL SCRIPT

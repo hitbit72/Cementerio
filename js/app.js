@@ -3,6 +3,7 @@
    ===================================================================== */
 
 const PAGE_SIZE = 20;
+const SEARCH_TIME = 450;    // Tiempo antes de mandar la consulta
 
 function appShell() {
   return {
