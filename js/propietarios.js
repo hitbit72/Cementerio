@@ -98,7 +98,7 @@ function propietariosSection() {
       this.searchDebounceId = setTimeout(() => {
         this.page = 0;
         this.fetchRows();
-      }, 350);
+      }, SEARCH_TIME);
     },
 
     async fetchRows() {
