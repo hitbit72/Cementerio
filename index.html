@@ -136,7 +136,7 @@
         <div x-data="difuntosSection()" x-init="init()">
 
           <div class="toolbar">
-            <input class="search-input" type="text" placeholder="Buscar por nombre, apellidos o nº de registro…"
+            <input class="search-input" type="text" placeholder="Buscar por apellidos, nombre o nº de registro…"
                    x-model="search" @input="onSearchInput()">
 
             <select class="select-input" x-model="sectorFiltro" @change="onSectorFilterChange()">
@@ -674,7 +674,7 @@
         <div x-data="propietariosSection()" x-init="init()">
 
           <div class="toolbar">
-            <input class="search-input" type="text" placeholder="Buscar por nombre, apellidos, apodo, DNI o teléfono…"
+            <input class="search-input" type="text" placeholder="Buscar por apellidos, nombre, apodo, DNI o teléfono…"
                    x-model="search" @input="onSearchInput()">
             <button class="btn btn-primary" x-show="canWrite" @click="openCreate()">+ Nuevo propietario</button>
           </div>
