@@ -638,6 +638,15 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 .tag-vacio { background: #DFEBE0; color: var(--color-success); }
 .tag-reservado { background: var(--color-accent-soft); color: var(--color-accent2, var(--color-primary-dark)); }
 
+.add-difunto-famili {
+  /* position: relative; */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.5em;
+  margin-top: 0.1em;
+}
+
 .add-familiar-box {
   position: relative;
   background: var(--color-surface);

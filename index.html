@@ -494,7 +494,7 @@
                         <!-- <p class="muted">Define filas y columnas en el sector para ver aquí su disposición visual.</p> -->
                         <div x-data="{ src: './img/sector/' + current.plano_img }">
                           <h4 class="subsection-title">Disposición</h4>
-                          <img x-bind:src="src">
+                          <img x-bind:src="src" style="max-height: 300px;">
                         </div>
                       </template>
 
@@ -779,6 +779,7 @@
                       </template>
 
                       <template x-for="rel in difuntos" :key="rel.id">
+                      <div class="add-difunto-famili">
                         <div class="familiar-row">
                           <div>
                             <div class="familiar-name" x-text="(rel.difunto?.nombre || '') + ' ' + (rel.difunto?.apellidos || '')"></div>
@@ -789,6 +790,7 @@
                             <button class="btn btn-ghost btn-sm" x-show="canWrite" @click="removeDifunto(rel)">Quitar</button>
                           </div>
                         </div>
+                      </div>
                       </template>
 
                       <template x-if="canWrite">
@@ -804,7 +806,7 @@
                             </div>
                           </div>
                           <div class="field" style="margin-bottom:0.6em;">
-                            <label>Relación (ej. Hijo/a, Nieto/a)</label>
+                            <label>Relación (El familiar es: ej. Hijo/a, Nieto/a)</label>
                             <input type="text" x-model="difRelacion">
                           </div>
                           <button class="btn btn-primary btn-sm" :disabled="!difSelected || difSaving" @click="addDifunto()">
