@@ -656,6 +656,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
   padding: 1em;
   margin-top: 1em;
 }
