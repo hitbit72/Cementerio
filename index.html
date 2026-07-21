@@ -264,6 +264,7 @@
                       </template>
 
                       <template x-for="rel in familiares" :key="rel.id">
+                      <div class="add-difunto-famili">
                         <div class="familiar-row">
                           <div>
                             <div class="familiar-name" x-text="(rel.propietario?.nombre || '') + ' ' + (rel.propietario?.apellidos || '')"></div>
@@ -274,6 +275,7 @@
                             <button class="btn btn-ghost btn-sm" x-show="canWrite" @click="removeFamiliar(rel)">Quitar</button>
                           </div>
                         </div>
+                      </div>
                       </template>
 
                       <template x-if="canWrite">
