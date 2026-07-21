@@ -70,6 +70,12 @@ function propietariosSection() {
       return !this.provincias.some(p => p.nombre.toLowerCase() === q);
     },
 
+    fmtDate(value) {
+      if (!value) return '—';
+      const [y, m, d] = value.split('-');
+      return `${d}/${m}/${y}`;
+    },
+
     async init() {
       const [{ data: poblaciones }, { data: provincias }] = await Promise.all([
         sb.from('poblacion').select('id, nombre').order('nombre'),
@@ -98,7 +104,7 @@ function propietariosSection() {
       this.searchDebounceId = setTimeout(() => {
         this.page = 0;
         this.fetchRows();
-      }, SEARCH_TIME);
+      }, 350);
     },
 
     async fetchRows() {
@@ -139,11 +145,6 @@ function propietariosSection() {
       if (this.page > 0) { this.page--; this.fetchRows(); }
     },
 
-    fmtDate(value) {
-      if (!value) return '—';
-      const [y, m, d] = value.split('-');
-      return `${d}/${m}/${y}`;
-    },
     // ---------- Abrir panel ----------
 
     openCreate() {
@@ -297,12 +298,17 @@ function propietariosSection() {
     async loadDifuntos(propietarioId) {
       this.difuntosLoading = true;
       const { data, error } = await sb
-        .from('relacion')
-        .select('id, relacion, observaciones, difunto:difunto_id(id, nombre, apellidos, num_registro, ffallecido, edad)')
+        .from('v_asociados_resumen')
+        .select('*')
         .eq('familiar_id', propietarioId);
       this.difuntosLoading = false;
       if (error) { console.error(error); this.difuntos = []; return; }
       this.difuntos = data || [];
+    },
+
+    ubicacionDifunto(rel) {
+      if (!rel.numero_nicho) return '—';
+      return `${rel.sector_nombre || ''} Nº${rel.numero_nicho}`;
     },
 
     onDifSearchInput() {
@@ -317,7 +323,7 @@ function propietariosSection() {
           .limit(8);
         if (error) { console.error(error); return; }
         this.difResults = data || [];
-      }, 300);
+      }, SEARCH_TIME);
     },
 
     pickDifunto(d) {
@@ -351,7 +357,7 @@ function propietariosSection() {
     },
 
     async removeDifunto(rel) {
-      if (!confirm(`¿Quitar a ${rel.difunto?.nombre || 'este difunto'} de los asociados a esta persona?`)) return;
+      if (!confirm(`¿Quitar a ${rel.nombre_d || 'este difunto'} de los asociados a esta persona?`)) return;
       const { error } = await sb.from('relacion').delete().eq('id', rel.id);
       if (error) { console.error(error); alert('No se ha podido quitar la relación.'); return; }
       this.loadDifuntos(this.current.id);

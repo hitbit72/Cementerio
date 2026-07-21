@@ -122,6 +122,10 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 
 .field input:focus { border-color: var(--color-primary); }
 
+.field .relacion {
+  text-transform: none;
+}
+
 .error-banner {
   background: var(--color-danger-soft);
   color: var(--color-danger);
@@ -335,7 +339,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1em;
-  margin-bottom: 2em;
+  margin-bottom: 0.5em;
 }
 
 .stat-card {

@@ -121,12 +121,23 @@
             </div>
           </div>
 
+          <!-- 
           <div class="panel">
             <h3>Bienvenido<span x-show="profile?.nombre">, <span x-text="profile.nombre"></span></span></h3>
             <p style="color:var(--color-ink-soft); margin:0;">
               Usa el menú lateral para consultar sectores, nichos, difuntos, propietarios y recibos.
               Tu rol actual es <strong x-text="profile?.role"></strong>.
             </p>
+          </div>
+          -->
+          <div class="card-grid">
+            <div class="panel">
+              <h3>Bienvenido<span x-show="profile?.nombre">, <span x-text="profile.nombre"></span></span></h3>
+              <p style="color:var(--color-ink-soft); margin:0;">
+                Usa el menú para consultar sectores, nichos, difuntos, familiares y recibos.
+              </p>
+            </div>
+            <div class="panel"><img src="./img/plano.jpg"></div>
           </div>
         </div>
       </template>
@@ -676,7 +687,7 @@
           <div class="toolbar">
             <input class="search-input" type="text" placeholder="Buscar por apellidos, nombre, apodo, DNI o teléfono…"
                    x-model="search" @input="onSearchInput()">
-            <button class="btn btn-primary" x-show="canWrite" @click="openCreate()">+ Nuevo propietario</button>
+            <button class="btn btn-primary" x-show="canWrite" @click="openCreate()">+ Nuevo familiar</button>
           </div>
 
           <table class="data-table">
@@ -768,22 +779,24 @@
                       <hr class="section-divider">
 
                       <!-- ---------- Difuntos asociados ---------- -->
-                      <h4 class="subsection-title">Difuntos asociados</h4>
+                      <h4 class="subsection-title">Difuntos relacionados</h4>
 
                       <template x-if="difuntosLoading">
                         <p class="muted">Cargando…</p>
                       </template>
 
                       <template x-if="!difuntosLoading && difuntos.length === 0">
-                        <p class="muted">No hay difuntos asociados todavía.</p>
+                        <p class="muted">No hay difuntos relacionados todavía.</p>
                       </template>
 
                       <template x-for="rel in difuntos" :key="rel.id">
                       <div class="add-difunto-famili">
                         <div class="familiar-row">
                           <div>
-                            <div class="familiar-name" x-text="(rel.difunto?.nombre || '') + ' ' + (rel.difunto?.apellidos || '')"></div>
-                            <div class="familiar-meta" x-text="rel.difunto?.ffallecido ? ('Fallecid@ ' + fmtDate(rel.difunto.ffallecido)) : ''"></div>
+                            <div class="familiar-name" x-text="(rel.nombre_d || '') + ' ' + (rel.apellidos_d || '')"></div>
+                            <!-- <div class="familiar-meta" x-text="[rel.num_registro_d ? ('Nº Registro ' + rel.num_registro_d) : '', ubicacionDifunto(rel)].filter(Boolean).join(' · ')"></div> -->
+                            <div class="familiar-meta" x-text="[rel.fallecido_d ? ('Fallecido(a) ' + fmtDate(rel.fallecido_d)) : '', ubicacionDifunto(rel)].filter(Boolean).join(' · ')"></div>
+							              
                           </div>
                           <div style="display:flex; align-items:center; gap:0.6em;">
                             <span class="tag" x-show="rel.relacion" x-text="rel.relacion"></span>
@@ -806,7 +819,7 @@
                             </div>
                           </div>
                           <div class="field" style="margin-bottom:0.6em;">
-                            <label>Relación (El familiar es: ej. Hijo/a, Nieto/a)</label>
+                            <label class="relacion">RELACIÓN ( El familiar es: ej. Hijo(a), Nieto(a) )</label>
                             <input type="text" x-model="difRelacion">
                           </div>
                           <button class="btn btn-primary btn-sm" :disabled="!difSelected || difSaving" @click="addDifunto()">

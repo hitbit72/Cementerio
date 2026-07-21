@@ -455,5 +455,40 @@ left join public.sector s
 grant select on public.v_recibos_resumen to authenticated;
 
 -- =====================================================================
+-- 14. VISTA DE ASOCIADOS (relación difunto ↔ familiar) CON NICHO/SECTOR
+--     Permite mostrar en la ficha de un propietario, junto a cada difunto
+--     asociado, su nicho y sector (p.ej. "Sector 3 Nº45") sin tener que
+--     hacer una consulta aparte para cada uno.
+-- =====================================================================
+
+create or replace view public.v_asociados_resumen
+with (security_invoker = true)
+as
+select
+    r.id,
+    r.relacion,
+    r.difunto_id,
+    r.familiar_id,
+    r.observaciones,
+    d.nombre        as nombre_d,
+    d.apellidos     as apellidos_d,
+    d.num_registro  as num_registro_d,
+    d.ffallecido    as fallecido_d,
+    d.edad          as edad_d,
+    d.nicho_id      as nicho_id,
+    n.numero_nicho,
+    n.sector_id,
+    s.nombre        as sector_nombre
+from public.relacion r
+left join public.difunto d
+    on d.id = r.difunto_id
+left join public.nichos n
+    on n.id = d.nicho_id
+left join public.sector s
+    on s.id = n.sector_id;
+
+grant select on public.v_asociados_resumen to authenticated;
+
+-- =====================================================================
 -- FIN DEL SCRIPT
 -- =====================================================================

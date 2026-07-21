@@ -1,6 +1,6 @@
 # Registro del Cementerio — Ayuntamientos
 
-Aplicación web de gestión municipal para el cementerio de Jimena: registro de
+Aplicación web de gestión municipal para el cementerio de Jimena (Jaén): registro de
 difuntos, nichos y sectores, propietarios/familiares y recibos de pago.
 Sustituye a la antigua aplicación creada con AppSheet, con datos migrados
 desde el Excel original.
@@ -131,7 +131,9 @@ nicho, población...) y permite:
 Listado con nombre, apellidos, apodo, teléfono, población y número de
 difuntos asociados. La ficha de cada propietario muestra el resto de sus
 datos de contacto y, en espejo con la sección Difuntos, la lista de
-**difuntos asociados** a esa persona.
+**difuntos asociados** a esa persona (leída de la vista `v_asociados_resumen`,
+que incluye también el sector y nicho de cada difunto para mostrarlo
+directamente, p. ej. "Sector 3 Nº45", sin otra consulta aparte).
 
 ### Recibos
 Listado de recibos con su ubicación (sector/nicho), el propietario asociado
