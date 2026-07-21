@@ -163,12 +163,12 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Nombre</th>
                 <th>Apellidos</th>
+                <th>Nombre</th>
+                <th>Nicho</th>
                 <th>Fallecimiento</th>
                 <th>Edad</th>
-                <th>Nicho</th>
-                <th>Población</th>
+                <th>Observaciones</th>
               </tr>
             </thead>
             <tbody>
@@ -181,12 +181,12 @@
               <template x-if="!loading">
                 <template x-for="row in rows" :key="row.id">
                   <tr @click="openDetail(row)">
-                    <td x-text="row.nombre"></td>
                     <td x-text="row.apellidos || '—'"></td>
+                    <td x-text="row.nombre"></td>
+                    <td x-text="ubicacion(row)"></td>
                     <td x-text="fmtDate(row.ffallecido)"></td>
                     <td x-text="row.edad ?? '—'"></td>
-                    <td x-text="ubicacion(row)"></td>
-                    <td x-text="row.poblacion?.nombre || '—'"></td>
+                    <td x-text="row.observaciones"></td>
                   </tr>
                 </template>
               </template>
@@ -693,12 +693,13 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Nombre</th>
                 <th>Apellidos</th>
+                <th>Nombre</th>
                 <th>Apodo</th>
                 <th>Teléfono</th>
-                <th>Difuntos asociados</th>
+                <th>Difuntos</th>
                 <th>Población</th>
+                <th>Observaciones</th>
               </tr>
             </thead>
             <tbody>
@@ -711,12 +712,13 @@
               <template x-if="!loading">
                 <template x-for="row in rows" :key="row.id">
                   <tr @click="openDetail(row)">
-                    <td x-text="row.nombre"></td>
                     <td x-text="row.apellidos || '—'"></td>
+                    <td x-text="row.nombre"></td>
                     <td x-text="row.mote || '—'"></td>
                     <td x-text="row.telefono || '—'"></td>
                     <td x-text="countFor(row.id)"></td>
                     <td x-text="row.poblacion?.nombre || '—'"></td>
+                    <td x-text="row.observaciones"></td>
                   </tr>
                 </template>
               </template>
